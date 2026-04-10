@@ -1,14 +1,26 @@
 package com.example.outletmanagement.controller;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.outletmanagement.payload.dto.LocationDto.LocationRequest;
 import com.example.outletmanagement.payload.dto.LocationDto.LocationResponse;
 import com.example.outletmanagement.payload.response.ApiResponse;
 import com.example.outletmanagement.service.LocationService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/locations")
@@ -18,47 +30,57 @@ public class LocationController {
     private final LocationService locationService;
 
     @PostMapping
-    public ApiResponse<LocationResponse> createLocation(
-            @RequestBody LocationRequest request) {
+    public ResponseEntity<ApiResponse<LocationResponse>> createLocation(
+            @Valid @RequestBody LocationRequest request) {
 
         LocationResponse response = locationService.createLocation(request);
 
-        return new ApiResponse<>(true, "Location created", response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, "Location created", response));
     }
 
     @GetMapping
-    public ApiResponse<List<LocationResponse>> getAllLocations() {
+    public ResponseEntity<ApiResponse<Page<LocationResponse>>> getAllLocations(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        List<LocationResponse> list = locationService.getAllLocations();
+        Page<LocationResponse> response =
+                locationService.getAllLocations(keyword, PageRequest.of(page, size));
 
-        return new ApiResponse<>(true, "Locations fetched", list);
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Locations fetched", response)
+        );
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<LocationResponse> getLocationById(
+    public ResponseEntity<ApiResponse<LocationResponse>> getLocationById(
             @PathVariable Long id) {
 
         LocationResponse response = locationService.getLocationById(id);
 
-        return new ApiResponse<>(true, "Location fetched", response);
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Location fetched", response)
+        );
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<LocationResponse> updateLocation(
+    public ResponseEntity<ApiResponse<LocationResponse>> updateLocation(
             @PathVariable Long id,
-            @RequestBody LocationRequest request) {
+            @Valid @RequestBody LocationRequest request) {
 
         LocationResponse response = locationService.updateLocation(id, request);
 
-        return new ApiResponse<>(true, "Location updated", response);
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Location updated", response)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<String> deleteLocation(
-            @PathVariable Long id) {
+    public ResponseEntity<Void> deleteLocation(@PathVariable Long id) {
 
         locationService.deleteLocation(id);
 
-        return new ApiResponse<>(true, "Location deleted", null);
+        return ResponseEntity.noContent().build();
     }
 }

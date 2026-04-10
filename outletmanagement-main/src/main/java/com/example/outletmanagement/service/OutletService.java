@@ -1,6 +1,6 @@
 package com.example.outletmanagement.service;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.example.outletmanagement.payload.dto.OutletDto.OutletRequest;
 import com.example.outletmanagement.payload.dto.OutletDto.OutletResponse;
@@ -11,7 +11,7 @@ public interface OutletService {
 
     OutletResponse getOutletById(Long id);
 
-    List<OutletResponse> getAllOutlets();
+    Page<OutletResponse> getAllOutlets(String keyword, Long locationId, Long divisionId, Pageable pageable);
 
     OutletResponse updateOutlet(Long id, OutletRequest request);
 

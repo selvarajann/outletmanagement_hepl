@@ -1,6 +1,7 @@
 package com.example.outletmanagement.service;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.example.outletmanagement.payload.dto.DivisionDto.DivisionRequest;
 import com.example.outletmanagement.payload.dto.DivisionDto.DivisionResponse;
@@ -9,7 +10,7 @@ public interface DivisionService {
 
     DivisionResponse createDivision(DivisionRequest request);
 
-    List<DivisionResponse> getAllDivisions();
+    Page<DivisionResponse> getAllDivisions(String keyword, Pageable pageable);
 
     DivisionResponse getDivisionById(Long id);
 
