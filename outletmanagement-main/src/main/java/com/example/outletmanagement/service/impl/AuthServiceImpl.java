@@ -4,13 +4,14 @@ import java.time.LocalDateTime;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.outletmanagement.model.entity.Login;
 import com.example.outletmanagement.payload.dto.AuthDto.AuthResponse;
 import com.example.outletmanagement.payload.dto.AuthDto.LoginRequest;
 import com.example.outletmanagement.payload.dto.AuthDto.RegisterRequest;
 import com.example.outletmanagement.repository.LoginRepository;
 import com.example.outletmanagement.service.AuthService;
 import com.example.outletmanagement.util.JwtUtil;
-import com.example.outletmanagement.model.entity.Login;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 

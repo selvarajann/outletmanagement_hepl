@@ -76,8 +76,8 @@ public class OutletServiceImpl implements OutletService {
     }
 
     @Override
-    public Page<OutletResponse> getAllOutlets(String keyword, Long locationId, Long divisionId, Pageable pageable) {
-        return outletRepository.findAll(OutletSpecification.searchAndFilter(keyword, locationId, divisionId), pageable)
+    public Page<OutletResponse> getAllOutlets(String keyword, Long locationId, Long divisionId, String outletType, Pageable pageable) {
+        return outletRepository.findAll(OutletSpecification.searchAndFilter(keyword, locationId, divisionId, outletType), pageable)
                 .map(this::mapToResponse);
     }
 

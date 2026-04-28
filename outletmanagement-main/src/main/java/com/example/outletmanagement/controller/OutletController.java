@@ -32,21 +32,13 @@ public class OutletController {
     @PostMapping
     public ResponseEntity<ApiResponse<OutletResponse>> create(
             @Valid @RequestBody OutletRequest request) {
-
-        OutletResponse response = outletService.createOutlet(request);
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Outlet created", response));
+                .body(new ApiResponse<>(true, "Outlet created", outletService.createOutlet(request)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OutletResponse>> getOutletById(@PathVariable Long id) {
-
-        OutletResponse response = outletService.getOutletById(id);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Outlet fetched successfully", response)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "Outlet fetched successfully", outletService.getOutletById(id)));
     }
 
     @GetMapping
@@ -54,36 +46,27 @@ public class OutletController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long locationId,
             @RequestParam(required = false) Long divisionId,
+            @RequestParam(required = false) String outletType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<OutletResponse> response =
-                outletService.getAllOutlets(keyword, locationId, divisionId,
-                        PageRequest.of(page, size));
+        Page<OutletResponse> response = outletService.getAllOutlets(
+                keyword, locationId, divisionId, outletType,
+                PageRequest.of(page, size));
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "All outlets fetched", response)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "All outlets fetched", response));
     }
-
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<OutletResponse>> updateOutlet(
             @PathVariable Long id,
             @Valid @RequestBody OutletRequest request) {
-
-        OutletResponse response = outletService.updateOutlet(id, request);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Outlet updated successfully", response)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "Outlet updated successfully", outletService.updateOutlet(id, request)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOutlet(@PathVariable Long id) {
-
         outletService.deleteOutlet(id);
-
         return ResponseEntity.noContent().build();
     }
 }

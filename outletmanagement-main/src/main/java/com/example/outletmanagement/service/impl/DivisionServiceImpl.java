@@ -40,8 +40,8 @@ public class DivisionServiceImpl implements DivisionService {
     }
 
     @Override
-    public Page<DivisionResponse> getAllDivisions(String keyword, Pageable pageable) {
-        return divisionRepository.findAll(DivisionSpecification.searchByName(keyword), pageable)
+    public Page<DivisionResponse> getAllDivisions(String keyword, Boolean hasProducts, Pageable pageable) {
+        return divisionRepository.findAll(DivisionSpecification.searchAndFilter(keyword, hasProducts), pageable)
                 .map(this::mapToResponse);
     }
 

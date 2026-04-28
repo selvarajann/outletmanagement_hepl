@@ -1,14 +1,23 @@
 package com.example.outletmanagement.specification;
 
 import org.springframework.data.jpa.domain.Specification;
+
 import com.example.outletmanagement.model.entity.Location;
+
+import jakarta.persistence.criteria.Predicate;
 
 public class LocationSpecification {
 
-    public static Specification<Location> searchByName(String keyword) {
+    public static Specification<Location> searchAndFilter(String keyword) {
         return (root, query, cb) -> {
-            if (keyword == null || keyword.isEmpty()) return cb.conjunction();
-            return cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%");
+            Predicate predicate = cb.conjunction();
+
+            if (keyword != null && !keyword.isBlank()) {
+                predicate = cb.and(predicate,
+                        cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"));
+            }
+
+            return predicate;
         };
     }
 }

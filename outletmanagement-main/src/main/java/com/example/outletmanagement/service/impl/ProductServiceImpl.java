@@ -63,9 +63,17 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAllProducts(String keyword, Long divisionId, Pageable pageable) {
-        return productRepository.findAll(ProductSpecification.searchAndFilter(keyword, divisionId), pageable)
-                .map(this::mapToResponse);
+    public Page<ProductResponse> getAllProducts(
+            String keyword,
+            Long divisionId,
+            java.math.BigDecimal minSellingPrice,
+            java.math.BigDecimal maxSellingPrice,
+            java.math.BigDecimal minPurchasePrice,
+            java.math.BigDecimal maxPurchasePrice,
+            Pageable pageable) {
+        return productRepository.findAll(
+                ProductSpecification.searchAndFilter(keyword, divisionId, minSellingPrice, maxSellingPrice, minPurchasePrice, maxPurchasePrice),
+                pageable).map(this::mapToResponse);
     }
 
     @Override

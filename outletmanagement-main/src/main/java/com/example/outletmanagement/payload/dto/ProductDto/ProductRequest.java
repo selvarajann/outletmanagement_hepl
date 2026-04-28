@@ -20,7 +20,6 @@ public class ProductRequest {
     @NotBlank(message = "Product code is required")
     private String productCode;
 
-    @NotNull(message = "Division ID is required")
     private Long divisionId;
 
     @NotNull(message = "UIM price is required")

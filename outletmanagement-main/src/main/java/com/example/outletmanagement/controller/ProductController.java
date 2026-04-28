@@ -1,5 +1,7 @@
 package com.example.outletmanagement.controller;
 
+import java.math.BigDecimal;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -32,55 +34,45 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
             @Valid @RequestBody ProductRequest request) {
-
-        ProductResponse response = productService.createProduct(request);
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Product created", response));
+                .body(new ApiResponse<>(true, "Product created", productService.createProduct(request)));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProductResponse>>> getAllProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long divisionId,
+            @RequestParam(required = false) BigDecimal minSellingPrice,
+            @RequestParam(required = false) BigDecimal maxSellingPrice,
+            @RequestParam(required = false) BigDecimal minPurchasePrice,
+            @RequestParam(required = false) BigDecimal maxPurchasePrice,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<ProductResponse> response =
-                productService.getAllProducts(keyword, divisionId, PageRequest.of(page, size));
+        Page<ProductResponse> response = productService.getAllProducts(
+                keyword, divisionId,
+                minSellingPrice, maxSellingPrice,
+                minPurchasePrice, maxPurchasePrice,
+                PageRequest.of(page, size));
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Products fetched", response)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "Products fetched", response));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
-
-        ProductResponse response = productService.getProductById(id);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Product fetched", response)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "Product fetched", productService.getProductById(id)));
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequest request) {
-
-        ProductResponse response = productService.updateProduct(id, request);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Product updated", response)
-        );
+        return ResponseEntity.ok(new ApiResponse<>(true, "Product updated", productService.updateProduct(id, request)));
     }
 
-    // ✅ DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-
         productService.deleteProduct(id);
-
         return ResponseEntity.noContent().build();
     }
 }

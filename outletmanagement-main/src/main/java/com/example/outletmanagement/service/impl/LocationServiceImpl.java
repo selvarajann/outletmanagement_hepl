@@ -36,7 +36,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public Page<LocationResponse> getAllLocations(String keyword, Pageable pageable) {
-        return locationRepository.findAll(LocationSpecification.searchByName(keyword), pageable)
+        return locationRepository.findAll(LocationSpecification.searchAndFilter(keyword), pageable)
                 .map(this::mapToResponse);
     }
 

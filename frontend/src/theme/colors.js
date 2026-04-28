@@ -1,0 +1,20 @@
+
+export const C = {
+  navy:         "#0f172a",
+  blue:         "#0050e6",
+  blueDark:     "#003ab3",
+  blueLight:    "#e8f0fe",
+  teal:         "#0e7490",
+  tealLight:    "#e0f2f7",
+  emerald:      "#047857",
+  emeraldLight: "#d1fae5",
+  amber:        "#b45309",
+  amberLight:   "#fef3c7",
+  red:          "#b91c1c",
+  redLight:     "#fee2e2",
+  slate:        "#475569",
+  slateLight:   "#f1f5f9",
+  border:       "#e2e8f0",
+  surface:      "#f8fafc",
+  white:        "#ffffff",
+};
