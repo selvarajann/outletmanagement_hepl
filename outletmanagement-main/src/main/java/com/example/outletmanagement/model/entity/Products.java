@@ -48,4 +48,7 @@ public class Products {
     @ManyToOne
     @JoinColumn(name = "division_id")
     private Division division;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

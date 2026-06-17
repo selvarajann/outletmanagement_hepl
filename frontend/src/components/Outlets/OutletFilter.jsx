@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
 import { Box, TextField, MenuItem, Select, InputLabel, FormControl, InputAdornment, Button, Chip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
-import { GetLocations } from "../../services/LocationService";
-import { GetDivisions } from "../../services/DivisionService";
+import { useLocations, useDivisions } from "../../hooks/useMasterData";
 import { C } from "../../theme/colors";
 
 const OUTLET_TYPES = ["Wholesale", "Distribution", "Franchise", "Warehouse"];
@@ -20,41 +18,32 @@ const fieldSx = {
 };
 
 export default function OutletFilter({ filters, onChange }) {
-  const [locations, setLocations] = useState([]);
-  const [divisions, setDivisions] = useState([]);
+  const { locations } = useLocations();
+  const { divisions } = useDivisions();
 
-  useEffect(() => {
-    GetLocations({ page: 0, size: 100 }).then((r) => setLocations(r.locations));
-    GetDivisions({ page: 0, size: 100 }).then((r) => setDivisions(r.divisions));
-  }, []);
-
-  const activeCount = [filters.locationId, filters.divisionId, filters.outletType].filter(Boolean).length;
-
+  const activeCount = [filters.keyword, filters.locationId, filters.divisionId, filters.outletType].filter(Boolean).length;
   const handleReset = () => onChange({ keyword: "", locationId: "", divisionId: "", outletType: "" });
 
   return (
-    <Box sx={{ p: 2, mb: 2.5, backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: 3 }}>
+    <Box sx={{ width: "100%", p: 2, backgroundColor: C.white, borderRadius: "14px" }}>
       <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-        <FilterListIcon sx={{ fontSize: 16, color: C.slate }} />
-        <Box component="span" sx={{ fontSize: 12, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: 0.7 }}>Filters</Box>
+        <FilterListIcon sx={{ fontSize: 16, color: C.slateMid }} />
+        <Box component="span" sx={{ fontSize: "11px", fontWeight: 700, color: C.slateMid, textTransform: "uppercase", letterSpacing: 0.8 }}>Filters</Box>
         {activeCount > 0 && (
-          <Chip label={`${activeCount} active`} size="small"
-            sx={{ fontSize: 10, fontWeight: 700, height: 18, backgroundColor: C.blueLight, color: C.blue }} />
+          <Chip label={`${activeCount} active`} size="small" sx={{ fontSize: 10, fontWeight: 700, height: 20, backgroundColor: `${C.blue}15`, color: C.blue, border: `1px solid ${C.blue}25`, ml: 1 }} />
         )}
         {activeCount > 0 && (
           <Button size="small" startIcon={<CloseIcon sx={{ fontSize: 12 }} />} onClick={handleReset}
-            sx={{ ml: "auto", fontSize: 11, textTransform: "none", color: C.slate, p: 0, minWidth: 0, "&:hover": { color: C.red, backgroundColor: "transparent" } }}>
+            sx={{ ml: "auto", fontSize: 11, textTransform: "none", color: C.slateMid, p: 0, minWidth: 0, "&:hover": { color: C.red, backgroundColor: "transparent" } }}>
             Reset
           </Button>
         )}
       </Box>
-
       <Box display="flex" flexWrap="wrap" gap={1.5}>
         <TextField placeholder="Search by name, code or owner..." size="small" value={filters.keyword}
           onChange={(e) => onChange({ ...filters, keyword: e.target.value })}
           sx={{ ...fieldSx, minWidth: 240 }}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: C.slate }} /></InputAdornment> }} />
-
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: C.slateMid }} /></InputAdornment> }} />
         <FormControl size="small" sx={{ ...fieldSx, minWidth: 150 }}>
           <InputLabel>Location</InputLabel>
           <Select value={filters.locationId} label="Location"
@@ -64,7 +53,6 @@ export default function OutletFilter({ filters, onChange }) {
             {locations.map((l) => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
           </Select>
         </FormControl>
-
         <FormControl size="small" sx={{ ...fieldSx, minWidth: 150 }}>
           <InputLabel>Division</InputLabel>
           <Select value={filters.divisionId} label="Division"
@@ -74,7 +62,6 @@ export default function OutletFilter({ filters, onChange }) {
             {divisions.map((d) => <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>)}
           </Select>
         </FormControl>
-
         <FormControl size="small" sx={{ ...fieldSx, minWidth: 150 }}>
           <InputLabel>Outlet Type</InputLabel>
           <Select value={filters.outletType} label="Outlet Type"

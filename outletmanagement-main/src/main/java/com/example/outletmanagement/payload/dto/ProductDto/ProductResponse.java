@@ -13,9 +13,11 @@ public class ProductResponse {
     private Long id;
     private String name;
     private String productCode;
+    private Long divisionId;
     private BigDecimal uimPrice;
     private BigDecimal mrp;
     private BigDecimal sellingPrice;
     private BigDecimal purchasePrice;
+    private String imageUrl;
     // private LocalDate expireDate;
     }

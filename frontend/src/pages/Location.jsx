@@ -1,13 +1,20 @@
-import { useEffect, useState } from "react";
-import { GetLocations, DeleteLocation, UpdateLocation, CreateLocation } from "../services/LocationService";
-import { Box } from "@mui/material";
+import { useState, useEffect, useRef } from "react";
+import { GetLocations, DeleteLocation, UpdateLocation, CreateLocation, ImportLocations, ExportLocations, GetLocationTemplate } from "../services/LocationService";
+import { Box, CircularProgress, Grid, Skeleton } from "@mui/material";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import InfoCard from "../components/shared/InfoCard";
 import { toast } from "react-toastify";
 import LocationTable from "../components/Locations/LocationTable";
 import LocationForm from "../components/Locations/LocationForm";
 import LocationFilter from "../components/Locations/LocationFilter";
 import LocationPagination from "../components/Locations/LocationPagination";
 import PageHeader from "../components/shared/PageHeader";
+import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
+import ImportExportBar from "../components/shared/ImportExportBar";
 import { C } from "../theme/colors";
+import usePaginatedFetch from "../hooks/usePaginatedFetch";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateMaster } from "../hooks/useMasterData";
 
 const emptyForm = { name: "" };
 const emptyFilters = { keyword: "" };
@@ -15,32 +22,38 @@ const emptyFilters = { keyword: "" };
 const validate = (form) => {
   const e = {};
   if (!form.name.trim()) e.name = "Location name is required";
+  else if (/\d/.test(form.name)) e.name = "Numbers are not allowed in location name";
+  else if (form.name.trim().length < 2) e.name = "Must be at least 2 characters";
   return e;
 };
 
+const fetchLocations = async ({ page, size, keyword }, signal) => {
+  const res = await GetLocations({ page, size, keyword: keyword || undefined }, signal);
+  return { rows: res.locations, totalPages: res.totalPages };
+};
+
 export default function Location() {
-  const [locations, setLocations] = useState([]);
+  const abortRef = useRef(null);
+  const debounceTimer = useRef(null);
+  const queryClient = useQueryClient();
+  useEffect(() => () => { abortRef.current?.abort(); clearTimeout(debounceTimer.current); }, []);
+
   const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState(emptyFilters);
+  const [debouncedFilters, setDebouncedFilters] = useState(emptyFilters);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [selectedId, setSelectedId] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
 
-  const fetchLocations = async () => {
-    try {
-      const res = await GetLocations({ page, size: 10, keyword: filters.keyword || undefined });
-      setLocations(res.locations);
-      setTotalPages(res.totalPages);
-    } catch {
-      toast.error("Failed to load locations");
-    }
+  const { rows: locations, totalPages, loading, refetch } = usePaginatedFetch(fetchLocations, { page, filters: debouncedFilters });
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => { if (page !== 0) setPage(0); setDebouncedFilters(newFilters); }, 500);
   };
-
-  useEffect(() => { fetchLocations(); }, [page, filters]);
-
-  const handleFilterChange = (newFilters) => { setPage(0); setFilters(newFilters); };
 
   const handleOpen = (location = null) => {
     if (location) { setForm({ name: location.name }); setSelectedId(location.id); }
@@ -54,33 +67,94 @@ export default function Location() {
   const handleSubmit = async () => {
     const e = validate(form);
     if (Object.keys(e).length) { setErrors(e); return; }
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
     try {
-      if (selectedId) { await UpdateLocation(selectedId, form); toast.success("Location updated!"); }
-      else { await CreateLocation(form); toast.success("Location created!"); }
-      handleClose(); fetchLocations();
+      if (selectedId) { await UpdateLocation(selectedId, form, signal); toast.success("Location updated!"); }
+      else { await CreateLocation(form, signal); toast.success("Location created!"); }
+      handleClose(); refetch(); invalidateMaster(queryClient, "locations");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Operation failed");
+      if (err.name === "AbortError" || err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
+      const res = err.response?.data;
+      if (res?.data && typeof res.data === "object") setErrors(res.data);
+      else toast.error(res?.message || "Operation failed");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this location?")) return;
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
     try {
-      await DeleteLocation(id);
-      toast.success("Location deleted!");
-      fetchLocations();
-    } catch {
-      toast.error("Failed to delete location");
+      await DeleteLocation(id, signal); toast.success("Location deleted!"); refetch(); invalidateMaster(queryClient, "locations");
+    } catch (err) {
+      if (err.name === "AbortError" || err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
+      toast.error(err.response?.data?.message || "Failed to delete location");
     }
   };
+
+  const cards = [
+    { title: "Total Locations", value: loading ? "—" : locations.length, icon: <LocationOnIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
+    { title: "Filtered Results", value: loading ? "—" : locations.length, icon: <LocationOnIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
+  ];
 
   return (
     <Box sx={{ backgroundColor: C.surface, minHeight: "100vh" }}>
       <PageHeader title="Locations" subtitle="Manage outlet locations" onAdd={() => handleOpen()} addLabel="Add Location" />
-      <LocationFilter filters={filters} onChange={handleFilterChange} />
-      <LocationTable locations={locations} onEdit={handleOpen} onDelete={handleDelete} />
+      <ImportExportBar
+        entity="Locations"
+        exportRows={locations}
+        onExport={async (format) => {
+          try {
+            const blob = await ExportLocations(debouncedFilters, format);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `locations_export.${format === "excel" ? "xlsx" : "csv"}`;
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch (err) {
+            toast.error("Failed to export locations");
+          }
+        }}
+        onTemplate={async (format) => {
+          try {
+            const blob = await GetLocationTemplate(format);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `locations_template.${format === "excel" ? "xlsx" : "csv"}`;
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch (err) {
+            toast.error("Failed to download template");
+          }
+        }}
+        onImport={(file) => ImportLocations(file)}
+        onImportDone={() => { refetch(); invalidateMaster(queryClient, "locations"); toast.success("Import complete — table refreshed."); }}
+        centerContent={<LocationFilter filters={filters} onChange={handleFilterChange} />}
+      />
+      <Grid container spacing={2.5} mb={3}>
+        {cards.map((c) => (
+          <Grid item xs={12} sm={6} key={c.title}>
+            {loading ? <Skeleton variant="rounded" height={82} sx={{ borderRadius: 3 }} /> : <InfoCard {...c} />}
+          </Grid>
+        ))}
+      </Grid>
+      {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
+      {!loading && <LocationTable locations={locations} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
       <LocationPagination page={page} totalPages={totalPages} onPageChange={setPage} />
-      <LocationForm open={open} form={form} setForm={setForm} errors={errors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
+      <LocationForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
+
+      <ViewDialog open={!!viewItem} onClose={() => setViewItem(null)} title="Location Details">
+        {viewItem && (
+          <>
+            <ViewRow label="Name" value={viewItem.name} />
+            <ViewRow label="ID"   value={viewItem.id} />
+          </>
+        )}
+      </ViewDialog>
     </Box>
   );
 }

@@ -13,6 +13,7 @@ public class OutletResponse {
     private Long id;
     private String outletName;
     private String outletCode;
+    private Long locationId;
     private String locationName;
     // private List<DivisionResponse> divisionNames;
     // private List<ProductResponse> productNames;

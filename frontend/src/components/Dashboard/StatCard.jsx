@@ -1,75 +1,102 @@
-import { Box, Paper, Typography, Chip } from "@mui/material";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import { Box, Paper, Typography } from "@mui/material";
+import TrendingUpIcon   from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import { C } from "../../theme/colors";
 
-const StatCard = ({ title, value, icon, accentColor, bgColor, trend }) => {
-  return (
-    <Paper
-      elevation={0}
+/**
+ * Premium KPI StatCard
+ * – White card with soft shadow + top accent bar
+ * – Coloured icon in a tinted square container
+ * – Bold navy value, muted label
+ * – Trend indicator with arrow
+ * – Smooth lift-on-hover
+ */
+const StatCard = ({ title, value, icon, accentColor, bgColor, trend, trendUp }) => (
+  <Paper
+    elevation={0}
+    className="card-enter"
+    sx={{
+      borderRadius: "14px",
+      bgcolor: "#fff",
+      border: `1px solid ${C.border}`,
+      overflow: "hidden",
+      position: "relative",
+      cursor: "default",
+      transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1), box-shadow 0.22s ease",
+      "&:hover": {
+        transform: "translateY(-4px)",
+        boxShadow: `0 16px 40px ${accentColor}14, 0 4px 12px rgba(15,23,42,0.07)`,
+      },
+    }}
+  >
+    {/* Top accent bar */}
+    <Box
       sx={{
-        p: 3,
-        borderRadius: 3,
-        backgroundColor: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderLeft: `4px solid ${accentColor}`,
-        position: "relative",
-        overflow: "hidden",
-        transition: "transform 0.2s, box-shadow 0.2s",
-        "&:hover": {
-          transform: "translateY(-3px)",
-          boxShadow: `0 8px 24px ${accentColor}22`,
-        },
+        height: 3,
+        background: `linear-gradient(90deg, ${accentColor} 0%, ${accentColor}60 100%)`,
+        position: "absolute", top: 0, left: 0, right: 0,
       }}
-    >
-      {/* Tinted background blob */}
-      <Box sx={{
-        position: "absolute", top: -16, right: -16,
-        width: 90, height: 90, borderRadius: "50%",
-        backgroundColor: bgColor, opacity: 0.6,
-      }} />
+    />
 
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" position="relative">
-        <Box>
+    {/* Ambient background circle */}
+    <Box
+      sx={{
+        position: "absolute", top: -16, right: -16,
+        width: 80, height: 80, borderRadius: "50%",
+        background: bgColor, opacity: 0.5, pointerEvents: "none",
+      }}
+    />
+
+    <Box sx={{ p: 2.5, pt: 3 }}>
+      <Box display="flex" alignItems="flex-start" justifyContent="space-between">
+        {/* Text */}
+        <Box flex={1} minWidth={0} pr={1.5}>
           <Typography
-            variant="caption"
-            sx={{ color: "#64748b", fontWeight: 600, letterSpacing: 0.7, textTransform: "uppercase", fontSize: 10 }}
+            sx={{
+              fontSize: "10.5px", fontWeight: 600, color: C.muted,
+              textTransform: "uppercase", letterSpacing: "0.8px", mb: 0.75,
+            }}
           >
             {title}
           </Typography>
-          <Typography variant="h5" fontWeight="800" color="#0f172a" mt={0.5} lineHeight={1.2}>
+          <Typography
+            noWrap
+            sx={{
+              fontSize: "clamp(1.3rem,2.5vw,1.65rem)",
+              fontWeight: 800, color: C.navy,
+              letterSpacing: "-0.4px", lineHeight: 1.1, mb: 1,
+            }}
+          >
             {value}
           </Typography>
+
           {trend !== undefined && (
-            <Chip
-              icon={<TrendingUpIcon sx={{ fontSize: "13px !important", color: `${accentColor} !important` }} />}
-              label={trend}
-              size="small"
-              sx={{
-                mt: 1.5,
-                backgroundColor: bgColor,
-                color: accentColor,
-                fontWeight: 600,
-                fontSize: 10,
-                border: "none",
-                height: 22,
-              }}
-            />
+            <Box display="flex" alignItems="center" gap={0.5}>
+              {trendUp === true  && <TrendingUpIcon   sx={{ fontSize: 13, color: C.emerald }} />}
+              {trendUp === false && <TrendingDownIcon sx={{ fontSize: 13, color: C.rose }} />}
+              <Typography sx={{ fontSize: "11px", fontWeight: 600, color: trendUp === false ? C.rose : trendUp === true ? C.emerald : C.muted }}>
+                {trend}
+              </Typography>
+            </Box>
           )}
         </Box>
 
-        <Box sx={{
-          backgroundColor: bgColor,
-          borderRadius: 2.5,
-          p: 1.25,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}>
-          <Box sx={{ color: accentColor, display: "flex" }}>{icon}</Box>
+        {/* Icon */}
+        <Box
+          sx={{
+            width: 46, height: 46, borderRadius: "12px", flexShrink: 0,
+            bgcolor: bgColor,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            "& svg": { fontSize: "22px !important", color: `${accentColor} !important` },
+          }}
+        >
+          {icon}
         </Box>
       </Box>
-    </Paper>
-  );
-};
+    </Box>
+  </Paper>
+);
 
-export default StatCard;
+import { memo } from "react";
+
+export default memo(StatCard);

@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
-import { TextField, FormControl, FormHelperText, Box, Typography, Checkbox, Avatar, Dialog, DialogContent } from "@mui/material";
+import { TextField, FormControl, FormHelperText, Box, Typography, Checkbox, Avatar, Dialog, DialogContent, Button } from "@mui/material";
+import { toast } from "react-toastify";
 import { GetProducts } from "../../services/ProductService";
 import FormDialog from "../shared/FormDialog";
 import { C } from "../../theme/colors";
+import { DEFAULT_PAGE_SIZE } from "../../constants/pagination";
+
+const validateName = (val) => {
+  if (!val.trim()) return "Division name is required";
+  if (/\d/.test(val)) return "Numbers are not allowed in division name";
+  if (val.trim().length < 2) return "Must be at least 2 characters";
+  return "";
+};
 
 const fieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -20,31 +29,39 @@ const SubDialog = ({ open, onClose, title, onConfirm, children }) => (
     <Box sx={{ px: 3, py: 2, backgroundColor: C.navy }}>
       <Typography fontWeight="700" fontSize={14} color={C.white}>{title}</Typography>
     </Box>
-    <DialogContent sx={{ px: 2, py: 1.5 }}>{children}</DialogContent>
+    <DialogContent sx={{ px: 2, py: 1.5, maxHeight: 320, overflowY: "auto" }}>{children}</DialogContent>
     <Box sx={{ px: 3, py: 2, borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "flex-end", gap: 1.5, backgroundColor: C.surface }}>
-      <Box component="button" onClick={onClose}
-        sx={{ textTransform: "none", fontWeight: 600, color: C.slate, border: `1px solid ${C.border}`, borderRadius: 2, px: 2.5, py: 0.75, cursor: "pointer", backgroundColor: C.white, fontSize: 13 }}>
+      <Button onClick={onClose}
+        sx={{ textTransform: "none", fontWeight: 600, color: C.slate, border: `1px solid ${C.border}`, borderRadius: 2, px: 2.5, "&:hover": { backgroundColor: C.slateLight } }}>
         Cancel
-      </Box>
-      <Box component="button" onClick={onConfirm}
-        sx={{ textTransform: "none", fontWeight: 600, color: C.white, backgroundColor: C.blue, border: "none", borderRadius: 2, px: 2.5, py: 0.75, cursor: "pointer", fontSize: 13, "&:hover": { backgroundColor: C.blueDark } }}>
+      </Button>
+      <Button onClick={onConfirm} variant="contained"
+        sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2, px: 2.5, backgroundColor: C.blue, boxShadow: "none", "&:hover": { backgroundColor: C.blueDark, boxShadow: "none" } }}>
         Confirm
-      </Box>
+      </Button>
     </Box>
   </Dialog>
 );
 
-export default function DivisionForm({ open, form, setForm, errors = {}, selectedId, onClose, onSubmit }) {
+export default function DivisionForm({ open, form, setForm, errors = {}, setErrors, selectedId, onClose, onSubmit }) {
   const [products, setProducts] = useState([]);
   const [productDialog, setProductDialog] = useState(false);
   const [tempProducts, setTempProducts] = useState([]);
 
   useEffect(() => {
     if (!open) return;
-    GetProducts({ page: 0, size: 100 }).then((r) => setProducts(r.products));
+    GetProducts({ page: 0, size: DEFAULT_PAGE_SIZE }).then((r) => setProducts(r.products));
   }, [open]);
 
   const selectedProducts = products.filter((p) => (form.productIds || []).includes(p.id));
+
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    if (/\d/.test(val.slice(-1))) { toast.warn("Numbers are not allowed in division name"); return; }
+    const newForm = { ...form, name: val };
+    setForm(newForm);
+    if (setErrors) setErrors((prev) => ({ ...prev, name: validateName(val) || undefined }));
+  };
 
   return (
     <>
@@ -53,8 +70,9 @@ export default function DivisionForm({ open, form, setForm, errors = {}, selecte
         submitLabel={selectedId ? "Update" : "Add Division"}>
 
         <TextField label="Division Name" value={form.name || ""}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          error={!!errors.name} helperText={errors.name} fullWidth sx={fieldSx} autoFocus />
+          onChange={handleNameChange}
+          error={!!errors.name} helperText={errors.name || "Only letters and spaces allowed"} fullWidth sx={fieldSx} autoFocus
+          inputProps={{ maxLength: 60 }} />
 
         <FormControl fullWidth error={!!errors.productIds}>
           <TextField label="Products" value={selectedProducts.map((p) => p.name).join(", ")}

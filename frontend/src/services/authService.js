@@ -4,6 +4,7 @@ export async function login(username, password) {
     const res = await fetch(`${BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password }),
     });
     const data = await res.json();
@@ -15,9 +16,20 @@ export async function register(username, password, email) {
     const res = await fetch(`${BASE}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password, email }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Registration failed');
+    return data.data;
+}
+
+export async function refreshToken() {
+    const res = await fetch(`${BASE}/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Refresh failed');
     return data.data;
 }

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
 import { TextField, MenuItem, Select, InputLabel, FormControl, FormHelperText, Grid } from "@mui/material";
-import { GetDivisions } from "../../services/DivisionService";
+import { toast } from "react-toastify";
+import { useDivisions } from "../../hooks/useMasterData";
 import FormDialog from "../shared/FormDialog";
 import { C } from "../../theme/colors";
+import { useCallback, memo } from "react";
 
 const fieldSx = {
   "& .MuiOutlinedInput-root": {
@@ -15,15 +16,53 @@ const fieldSx = {
   "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
 };
 
-export default function ProductForm({ open, form, setForm, errors = {}, selectedId, onClose, onSubmit }) {
-  const [divisions, setDivisions] = useState([]);
+const validateField = (field, val) => {
+  switch (field) {
+    case "name":
+      if (!String(val).trim()) return "Product name is required";
+      if (/\d/.test(val)) return "Numbers are not allowed in product name";
+      if (String(val).trim().length < 2) return "Must be at least 2 characters";
+      return "";
+    case "productCode":
+      if (!String(val).trim()) return "Product code is required";
+      if (!/^[A-Za-z0-9_-]+$/.test(val)) return "Only letters, numbers, - and _ allowed";
+      return "";
+    case "uimPrice": case "mrp": case "sellingPrice": case "purchasePrice":
+      if (val === "" || val === null) return "This field is required";
+      if (isNaN(val) || Number(val) < 0) return "Must be a positive number";
+      return "";
+    default: return "";
+  }
+};
 
-  useEffect(() => {
-    if (!open) return;
-    GetDivisions({ page: 0, size: 100 }).then((r) => setDivisions(r.divisions));
-  }, [open]);
+const ProductForm = memo(({ open, form, setForm, errors = {}, setErrors, selectedId, onClose, onSubmit }) => {
+  const { divisions } = useDivisions();
 
-  const f = (field) => ({ value: form[field] ?? "", onChange: (e) => setForm({ ...form, [field]: e.target.value }), error: !!errors[field], helperText: errors[field], fullWidth: true, sx: fieldSx });
+  const handleChange = useCallback((field) => (e) => {
+    const val = e.target.value;
+    if (field === "name" && /\d/.test(val.slice(-1))) {
+      toast.warn("Numbers are not allowed in product name"); return;
+    }
+    if (["uimPrice", "mrp", "sellingPrice", "purchasePrice"].includes(field)) {
+      if (val !== "" && !/^\d*\.?\d*$/.test(val)) {
+        toast.warn("Only numeric values allowed for prices"); return;
+      }
+    }
+    setForm(prev => ({ ...prev, [field]: val }));
+    if (setErrors) {
+      const err = validateField(field, val);
+      setErrors((prev) => ({ ...prev, [field]: err || undefined }));
+    }
+  }, [setForm, setErrors]);
+
+  const f = useCallback((field) => ({
+    value: form[field] ?? "",
+    onChange: handleChange(field),
+    error: !!errors[field],
+    helperText: errors[field],
+    fullWidth: true,
+    sx: fieldSx,
+  }), [form, errors, handleChange]);
 
   return (
     <FormDialog
@@ -43,7 +82,7 @@ export default function ProductForm({ open, form, setForm, errors = {}, selected
       <FormControl fullWidth error={!!errors.divisionId} sx={fieldSx}>
         <InputLabel>Division</InputLabel>
         <Select value={form.divisionId || ""} label="Division"
-          onChange={(e) => setForm({ ...form, divisionId: e.target.value })}
+          onChange={(e) => setForm(prev => ({ ...prev, divisionId: e.target.value }))}
           sx={{ borderRadius: 2, fontSize: 14 }}>
           {divisions.map((d) => <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>)}
         </Select>
@@ -66,4 +105,6 @@ export default function ProductForm({ open, form, setForm, errors = {}, selected
       </Grid>
     </FormDialog>
   );
-}
+});
+
+export default ProductForm;

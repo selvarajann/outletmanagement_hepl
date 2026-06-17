@@ -1,16 +1,19 @@
 package com.example.outletmanagement.model.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.persistence.UniqueConstraint;
+
 @Entity
 @Table(
     name = "outlet_division_product",
@@ -27,15 +30,18 @@ public class OutletDivisionProduct {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "outlet_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outlet_id", nullable = false)
     private Outlet outlet;
 
-    @ManyToOne
-    @JoinColumn(name = "division_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "division_id", nullable = false)
     private Division division;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
     private Products product;
+
+    @Column(nullable = false)
+    private Boolean active = true;
 }
