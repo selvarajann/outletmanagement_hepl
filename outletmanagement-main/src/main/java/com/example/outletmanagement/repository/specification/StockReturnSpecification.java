@@ -30,7 +30,11 @@ public class StockReturnSpecification {
     public static Specification<StockReturn> hasStatus(String status) {
         return (root, query, builder) -> {
             if (!StringUtils.hasText(status)) return null;
-            return builder.equal(root.get("status"), status);
+            try {
+                return builder.equal(root.get("status"), com.example.outletmanagement.model.enums.StockReturnStatus.valueOf(status.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         };
     }
     

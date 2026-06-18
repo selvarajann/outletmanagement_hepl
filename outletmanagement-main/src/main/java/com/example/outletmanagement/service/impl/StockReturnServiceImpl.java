@@ -8,6 +8,7 @@ import com.example.outletmanagement.repository.*;
 import com.example.outletmanagement.repository.specification.StockReturnSpecification;
 import com.example.outletmanagement.service.AuditLogService;
 import com.example.outletmanagement.service.StockReturnService;
+import com.example.outletmanagement.model.enums.StockReturnStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -68,7 +69,7 @@ public class StockReturnServiceImpl implements StockReturnService {
         stockReturn.setBatch(batch);
         stockReturn.setOutlet(batch.getOutlet());
         stockReturn.setReason(request.getReason());
-        stockReturn.setStatus("PENDING");
+        stockReturn.setStatus(StockReturnStatus.PENDING);
         stockReturn.setNotes(request.getNotes());
         stockReturn.setCreatedBy(createdBy);
 
@@ -190,11 +191,11 @@ public class StockReturnServiceImpl implements StockReturnService {
         StockReturn stockReturn = stockReturnRepository.findById(returnId)
                 .orElseThrow(() -> new IllegalArgumentException("Stock Return not found"));
 
-        if (!"PENDING".equals(stockReturn.getStatus())) {
+        if (stockReturn.getStatus() != StockReturnStatus.PENDING) {
             throw new IllegalStateException("Only PENDING returns can be approved");
         }
 
-        stockReturn.setStatus("APPROVED");
+        stockReturn.setStatus(StockReturnStatus.APPROVED);
         stockReturnRepository.save(stockReturn);
 
         // Async notify IMS
@@ -209,11 +210,11 @@ public class StockReturnServiceImpl implements StockReturnService {
         StockReturn stockReturn = stockReturnRepository.findById(returnId)
                 .orElseThrow(() -> new IllegalArgumentException("Stock Return not found"));
 
-        if (!"PENDING".equals(stockReturn.getStatus())) {
+        if (stockReturn.getStatus() != StockReturnStatus.PENDING) {
             throw new IllegalStateException("Only PENDING returns can be rejected");
         }
 
-        stockReturn.setStatus("REJECTED");
+        stockReturn.setStatus(StockReturnStatus.REJECTED);
         stockReturn.setNotes(stockReturn.getNotes() != null ? stockReturn.getNotes() + " | Rejection Reason: " + reason : "Rejection Reason: " + reason);
         stockReturnRepository.save(stockReturn);
 
@@ -226,11 +227,11 @@ public class StockReturnServiceImpl implements StockReturnService {
         StockReturn stockReturn = stockReturnRepository.findById(returnId)
                 .orElseThrow(() -> new IllegalArgumentException("Stock Return not found"));
 
-        if (!"SUBMITTED".equals(stockReturn.getStatus()) && !"APPROVED".equals(stockReturn.getStatus())) {
+        if (stockReturn.getStatus() != StockReturnStatus.SUBMITTED && stockReturn.getStatus() != StockReturnStatus.APPROVED) {
             throw new IllegalStateException("Only APPROVED/SUBMITTED returns can be completed");
         }
 
-        stockReturn.setStatus("COMPLETED");
+        stockReturn.setStatus(StockReturnStatus.COMPLETED);
         stockReturn.setImsAckCode(imsAckCode);
 
         stockReturnRepository.save(stockReturn);

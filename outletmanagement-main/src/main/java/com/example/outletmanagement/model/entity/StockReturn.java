@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.example.outletmanagement.model.enums.StockReturnStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,8 +35,9 @@ public class StockReturn {
     @Column(nullable = false)
     private String reason; // DEFECTIVE, EXPIRED, WRONG_ITEM, OTHER
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // PENDING, SUBMITTED, ACKNOWLEDGED, COMPLETED
+    private StockReturnStatus status; // PENDING, SUBMITTED, APPROVED, REJECTED, ACKNOWLEDGED, COMPLETED, FAILED
 
     private String imsAckCode;
 

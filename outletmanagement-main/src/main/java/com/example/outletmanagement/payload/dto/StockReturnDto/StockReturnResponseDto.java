@@ -3,6 +3,7 @@ package com.example.outletmanagement.payload.dto.StockReturnDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.example.outletmanagement.model.enums.StockReturnStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,7 +19,7 @@ public class StockReturnResponseDto {
     private Long outletId;
     private String outletName;
     private String reason;
-    private String status;
+    private StockReturnStatus status;
     private String imsAckCode;
     private String imsPushStatus;
     private String notes;

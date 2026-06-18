@@ -124,7 +124,7 @@ public class InventoryApiClient {
 
             log.info("[IMS] Stock return pushed for return={} → HTTP {}", stockReturn.getReturnCode(), response.getStatusCode());
 
-            stockReturn.setStatus("SUBMITTED");
+            stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.SUBMITTED);
             stockReturnRepository.save(stockReturn);
 
         } catch (RestClientException ex) {

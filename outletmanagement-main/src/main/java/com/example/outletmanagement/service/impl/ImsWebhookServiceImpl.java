@@ -7,6 +7,7 @@ import com.example.outletmanagement.payload.dto.WebhookDto.ImsDispatchWebhookRes
 import com.example.outletmanagement.repository.ProductRepository;
 import com.example.outletmanagement.repository.ShipmentRepository;
 import com.example.outletmanagement.repository.StockOrderRepository;
+import com.example.outletmanagement.repository.StockReturnRepository;
 import com.example.outletmanagement.service.AuditLogService;
 import com.example.outletmanagement.service.ImsWebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +32,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
     private final ShipmentRepository shipmentRepository;
     private final StockOrderRepository stockOrderRepository;
     private final ProductRepository productRepository;
+    private final StockReturnRepository stockReturnRepository;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -100,5 +102,46 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
         auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "IMS_DISPATCH_SUCCESS", "Shipment", "POST", "/api/webhook/ims/dispatch", "IMS", 200, payloadJson, null);
 
         return new ImsDispatchWebhookResponseDto(request.getImsReferenceCode(), shipmentCode, "SUCCESS");
+    }
+
+    @Override
+    @Transactional
+    public com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto handleReturnAck(com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckRequestDto request) {
+        String payloadJson = "";
+        try {
+            payloadJson = objectMapper.writeValueAsString(request);
+        } catch (Exception ignored) {}
+
+        StockReturn stockReturn = stockReturnRepository.findByReturnCode(request.getReturnCode())
+                .orElseThrow(() -> new IllegalArgumentException("StockReturn not found: " + request.getReturnCode()));
+
+        // Idempotency: Check if already acknowledged or has the same imsAckCode
+        if (stockReturn.getImsAckCode() != null && stockReturn.getImsAckCode().equals(request.getImsAckCode()) ||
+                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.ACKNOWLEDGED ||
+                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
+            
+            log.warn("Duplicate webhook received for Return Code: {}", request.getReturnCode());
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_DUPLICATE", "StockReturn", "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
+            return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "IGNORED");
+        }
+
+        try {
+            stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.valueOf(request.getStatus().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + request.getStatus());
+        }
+        
+        stockReturn.setImsAckCode(request.getImsAckCode());
+        
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            stockReturn.setNotes(stockReturn.getNotes() != null ? stockReturn.getNotes() + " | IMS: " + request.getNotes() : "IMS: " + request.getNotes());
+        }
+
+        stockReturn.setUpdatedAt(LocalDateTime.now());
+        stockReturnRepository.save(stockReturn);
+
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_RECEIVED", "StockReturn", "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
+
+        return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "SUCCESS");
     }
 }
