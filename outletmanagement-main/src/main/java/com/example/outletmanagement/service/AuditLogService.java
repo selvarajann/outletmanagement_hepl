@@ -58,6 +58,7 @@ public class AuditLogService {
                                              String username,
                                              String action,
                                              String entity,
+                                             String businessKey,
                                              String httpMethod,
                                              String uri,
                                              String ipAddress,
@@ -70,6 +71,7 @@ public class AuditLogService {
                     .username(username)
                     .action(action)
                     .entity(entity)
+                    .businessKey(businessKey)
                     .httpMethod(httpMethod)
                     .uri(uri)
                     .ipAddress(ipAddress)
@@ -79,8 +81,13 @@ public class AuditLogService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            auditLogRepository.save(entry);
-            log.debug("[{}] Audit persisted — action={}, entity={}, user={}", correlationId, action, entity, username);
+            log.info("BUSINESS_KEY_BEFORE_SAVE={}", entry.getBusinessKey());
+
+            AuditLog saved = auditLogRepository.save(entry);
+            
+            log.info("BUSINESS_KEY_AFTER_SAVE={}", saved.getBusinessKey());
+
+            log.debug("[{}] Audit persisted — action={}, entity={}, key={}, user={}", correlationId, action, entity, businessKey, username);
 
             // Trigger notification for major SUPER_ADMIN events (e.g. DELETE, IMPORT)
             if (action != null && (action.startsWith("DELETE_") || action.startsWith("IMPORT_"))) {

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 
 import com.example.outletmanagement.model.entity.AuditLog;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 /**
  * JPA repository for {@link AuditLog} entities.
  * <p>
@@ -16,7 +18,7 @@ import com.example.outletmanagement.model.entity.AuditLog;
  * ({@code idx_audit_username}, {@code idx_audit_entity}, {@code idx_audit_created}).
  */
 @Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
+public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSpecificationExecutor<AuditLog> {
 
     /**
      * Finds all audit log entries for a given username and entity within a time range.

@@ -31,6 +31,7 @@ import lombok.NoArgsConstructor;
     indexes = {
         @Index(name = "idx_audit_username", columnList = "username"),
         @Index(name = "idx_audit_entity",   columnList = "entity"),
+        @Index(name = "idx_audit_business_key", columnList = "business_key"),
         @Index(name = "idx_audit_created",  columnList = "created_at")
     }
 )
@@ -59,6 +60,10 @@ public class AuditLog {
     /** Domain entity name from {@code @AuditAction.entity()}, e.g. "Product". */
     @Column(name = "entity", nullable = false, length = 100)
     private String entity;
+
+    /** Optional business key to tie the log to a specific record (e.g. ReturnCode, BatchCode). */
+    @Column(name = "business_key", length = 255)
+    private String businessKey;
 
     /** HTTP method — GET, POST, PUT, DELETE, PATCH. */
     @Column(name = "http_method", length = 10)

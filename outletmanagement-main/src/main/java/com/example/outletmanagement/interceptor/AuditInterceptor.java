@@ -99,7 +99,7 @@ public class AuditInterceptor implements HandlerInterceptor {
 
         // Async write — returns immediately; AuditLogService handles retry/fallback
         auditLogService.saveAsync(
-                correlationId, username, meta.action(), meta.entity(),
+                correlationId, username, meta.action(), meta.entity(), null,
                 request.getMethod(), request.getRequestURI(), clientIp,
                 statusCode, requestBody, impersonatedBy);
 

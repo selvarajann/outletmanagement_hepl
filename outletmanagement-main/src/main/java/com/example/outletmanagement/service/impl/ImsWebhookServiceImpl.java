@@ -47,7 +47,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
         // Idempotency: Check if IMS Reference Code already exists
         if (shipmentRepository.findByImsReferenceCode(request.getImsReferenceCode()).isPresent()) {
             log.warn("Duplicate webhook received for IMS Reference: {}", request.getImsReferenceCode());
-            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "IMS_DISPATCH_DUPLICATE", "Shipment", "POST", "/api/webhook/ims/dispatch", "IMS", 200, payloadJson, null);
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "IMS_DISPATCH_DUPLICATE", "Shipment", request.getOrderCode(), "POST", "/api/webhook/ims/dispatch", "IMS", 200, payloadJson, null);
             return new ImsDispatchWebhookResponseDto(request.getImsReferenceCode(), null, "IGNORED");
         }
 
@@ -99,7 +99,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         shipmentRepository.save(shipment);
 
-        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "IMS_DISPATCH_SUCCESS", "Shipment", "POST", "/api/webhook/ims/dispatch", "IMS", 200, payloadJson, null);
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "IMS_DISPATCH_SUCCESS", "Shipment", request.getOrderCode(), "POST", "/api/webhook/ims/dispatch", "IMS", 200, payloadJson, null);
 
         return new ImsDispatchWebhookResponseDto(request.getImsReferenceCode(), shipmentCode, "SUCCESS");
     }
@@ -121,7 +121,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
             
             log.warn("Duplicate webhook received for Return Code: {}", request.getReturnCode());
-            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_DUPLICATE", "StockReturn", "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_DUPLICATE", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
             return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "IGNORED");
         }
 
@@ -140,7 +140,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
         stockReturn.setUpdatedAt(LocalDateTime.now());
         stockReturnRepository.save(stockReturn);
 
-        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_RECEIVED", "StockReturn", "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
 
         return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "SUCCESS");
     }
@@ -162,7 +162,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
 
             log.warn("Duplicate pickup webhook received for Return Code: {}", request.getReturnCode());
-            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_DUPLICATE", "StockReturn", "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_DUPLICATE", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
             return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "IGNORED");
         }
 
@@ -181,7 +181,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
         stockReturn.setUpdatedAt(LocalDateTime.now());
         stockReturnRepository.save(stockReturn);
 
-        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_RECEIVED", "StockReturn", "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
 
         return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "SUCCESS");
     }
@@ -202,7 +202,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
 
             log.warn("Duplicate completion webhook received for Return Code: {}", request.getReturnCode());
-            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_DUPLICATE", "StockReturn", "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_DUPLICATE", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
             return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "IGNORED");
         }
 
@@ -221,7 +221,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
         stockReturn.setUpdatedAt(LocalDateTime.now());
         stockReturnRepository.save(stockReturn);
 
-        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_RECEIVED", "StockReturn", "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
 
         return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "SUCCESS");
     }

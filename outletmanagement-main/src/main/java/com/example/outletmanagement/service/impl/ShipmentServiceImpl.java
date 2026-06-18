@@ -142,6 +142,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 receivedBy,
                 "RECEIVE_SHIPMENT",
                 "Shipment",
+                shipment.getShipmentCode(),
                 "POST",
                 "/api/shipments/" + shipmentId + "/receive",
                 "CLIENT",
