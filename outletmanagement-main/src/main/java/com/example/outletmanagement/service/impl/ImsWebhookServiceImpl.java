@@ -144,4 +144,45 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "SUCCESS");
     }
+
+    @Override
+    @Transactional
+    public com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto handleReturnPickup(com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupRequestDto request) {
+        String payloadJson = "";
+        try {
+            payloadJson = objectMapper.writeValueAsString(request);
+        } catch (Exception ignored) {}
+
+        StockReturn stockReturn = stockReturnRepository.findByReturnCode(request.getReturnCode())
+                .orElseThrow(() -> new IllegalArgumentException("StockReturn not found: " + request.getReturnCode()));
+
+        // Idempotency check
+        if (stockReturn.getPickupReferenceCode() != null && stockReturn.getPickupReferenceCode().equals(request.getPickupReferenceCode()) ||
+                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.PICKED_UP ||
+                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
+
+            log.warn("Duplicate pickup webhook received for Return Code: {}", request.getReturnCode());
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_DUPLICATE", "StockReturn", "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
+            return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "IGNORED");
+        }
+
+        // Status transition validation: Only ACKNOWLEDGED -> PICKED_UP is allowed
+        if (stockReturn.getStatus() != com.example.outletmanagement.model.enums.StockReturnStatus.ACKNOWLEDGED) {
+            throw new IllegalArgumentException("Invalid state transition. StockReturn must be ACKNOWLEDGED to be marked as PICKED_UP.");
+        }
+
+        stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.PICKED_UP);
+        stockReturn.setPickupReferenceCode(request.getPickupReferenceCode());
+
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            stockReturn.setNotes(stockReturn.getNotes() != null ? stockReturn.getNotes() + " | IMS Pickup: " + request.getNotes() : "IMS Pickup: " + request.getNotes());
+        }
+
+        stockReturn.setUpdatedAt(LocalDateTime.now());
+        stockReturnRepository.save(stockReturn);
+
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_RECEIVED", "StockReturn", "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
+
+        return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "SUCCESS");
+    }
 }

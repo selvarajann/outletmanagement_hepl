@@ -6,6 +6,7 @@ public enum StockReturnStatus {
     APPROVED,
     REJECTED,
     ACKNOWLEDGED,
+    PICKED_UP,
     COMPLETED,
     FAILED
 }

@@ -251,6 +251,7 @@ public class StockReturnServiceImpl implements StockReturnService {
         dto.setReason(stockReturn.getReason());
         dto.setStatus(stockReturn.getStatus());
         dto.setImsAckCode(stockReturn.getImsAckCode());
+        dto.setPickupReferenceCode(stockReturn.getPickupReferenceCode());
         dto.setImsPushStatus(stockReturn.getImsPushStatus());
         dto.setNotes(stockReturn.getNotes());
         dto.setCreatedBy(stockReturn.getCreatedBy());
