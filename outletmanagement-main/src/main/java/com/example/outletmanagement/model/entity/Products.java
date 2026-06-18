@@ -1,5 +1,6 @@
 package com.example.outletmanagement.model.entity;
 
+import com.example.outletmanagement.model.enums.ProductStatus;
 import java.math.BigDecimal;
 
 import jakarta.persistence.Column;
@@ -51,4 +52,8 @@ public class Products {
 
     @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "status", nullable = false)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    private ProductStatus status = ProductStatus.ACTIVE;
 }

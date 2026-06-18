@@ -8,6 +8,7 @@ import com.example.outletmanagement.repository.ProductRepository;
 import com.example.outletmanagement.repository.ShipmentRepository;
 import com.example.outletmanagement.repository.StockOrderRepository;
 import com.example.outletmanagement.repository.StockReturnRepository;
+import com.example.outletmanagement.repository.DivisionRepository;
 import com.example.outletmanagement.service.AuditLogService;
 import com.example.outletmanagement.service.ImsWebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
     private final StockOrderRepository stockOrderRepository;
     private final ProductRepository productRepository;
     private final StockReturnRepository stockReturnRepository;
+    private final DivisionRepository divisionRepository;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -224,5 +226,90 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
         auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
 
         return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "SUCCESS");
+    }
+
+    @Override
+    @Transactional
+    public com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto handleProductSync(com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncRequestDto request) {
+        String payloadJson = "";
+        try {
+            payloadJson = objectMapper.writeValueAsString(request);
+        } catch (Exception ignored) {}
+
+        try {
+            Division division = null;
+            if (request.getDivisionName() != null && !request.getDivisionName().trim().isEmpty()) {
+                division = divisionRepository.findByNameIgnoreCase(request.getDivisionName().trim())
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown division name: " + request.getDivisionName()));
+            }
+
+            com.example.outletmanagement.model.enums.ProductStatus requestedStatus = com.example.outletmanagement.model.enums.ProductStatus.ACTIVE;
+            if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+                try {
+                    requestedStatus = com.example.outletmanagement.model.enums.ProductStatus.valueOf(request.getStatus().trim().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Invalid product status: " + request.getStatus());
+                }
+            }
+
+            Products product = productRepository.findByProductCode(request.getProductCode()).orElse(null);
+
+            if (product == null) {
+                // Create
+                product = new Products();
+                product.setProductCode(request.getProductCode());
+                product.setName(request.getName());
+                product.setUimPrice(request.getUimPrice());
+                product.setMrp(request.getMrp());
+                product.setSellingPrice(request.getSellingPrice());
+                product.setPurchasePrice(request.getPurchasePrice());
+                product.setDivision(division);
+                product.setImageUrl(request.getImageUrl());
+                product.setStatus(requestedStatus);
+
+                productRepository.save(product);
+
+                auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_CREATED", "Product", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 200, payloadJson, null);
+
+                return new com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto(request.getProductCode(), "CREATED");
+            } else {
+                // Update or Duplicate
+                boolean isDuplicate = true;
+                if (!java.util.Objects.equals(product.getName(), request.getName())) isDuplicate = false;
+                if (product.getUimPrice().compareTo(request.getUimPrice()) != 0) isDuplicate = false;
+                if (product.getMrp().compareTo(request.getMrp()) != 0) isDuplicate = false;
+                if (product.getSellingPrice().compareTo(request.getSellingPrice()) != 0) isDuplicate = false;
+                if (product.getPurchasePrice().compareTo(request.getPurchasePrice()) != 0) isDuplicate = false;
+                if (!java.util.Objects.equals(product.getImageUrl(), request.getImageUrl())) isDuplicate = false;
+                if (product.getStatus() != requestedStatus) isDuplicate = false;
+                
+                Long currentDivId = product.getDivision() != null ? product.getDivision().getId() : null;
+                Long newDivId = division != null ? division.getId() : null;
+                if (!java.util.Objects.equals(currentDivId, newDivId)) isDuplicate = false;
+
+                if (isDuplicate) {
+                    auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_DUPLICATE", "Product", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 200, payloadJson, null);
+                    return new com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto(request.getProductCode(), "IGNORED");
+                }
+
+                product.setName(request.getName());
+                product.setUimPrice(request.getUimPrice());
+                product.setMrp(request.getMrp());
+                product.setSellingPrice(request.getSellingPrice());
+                product.setPurchasePrice(request.getPurchasePrice());
+                product.setDivision(division);
+                product.setImageUrl(request.getImageUrl());
+                product.setStatus(requestedStatus);
+
+                productRepository.save(product);
+
+                auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_UPDATED", "Product", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 200, payloadJson, null);
+
+                return new com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto(request.getProductCode(), "UPDATED");
+            }
+        } catch (Exception e) {
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_SYNC_FAILED", "Product", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 500, payloadJson + " | ERROR: " + e.getMessage(), null);
+            throw e;
+        }
     }
 }

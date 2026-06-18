@@ -11,4 +11,5 @@ public interface ProductRepository extends JpaRepository<Products, Long>, JpaSpe
     boolean existsByName(String name);
     boolean existsByProductCode(String productCode);
     List<Products> findByDivision_Id(Long divisionId);
+    java.util.Optional<Products> findByProductCode(String productCode);
 }

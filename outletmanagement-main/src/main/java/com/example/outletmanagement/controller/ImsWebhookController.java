@@ -8,6 +8,8 @@ import com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupRequestDt
 import com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto;
 import com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionRequestDto;
 import com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto;
 import com.example.outletmanagement.payload.response.ApiResponse;
 import com.example.outletmanagement.service.ImsWebhookService;
 import jakarta.validation.Valid;
@@ -122,6 +124,32 @@ public class ImsWebhookController {
             ReturnCompletionResponseDto response = imsWebhookService.handleReturnCompletion(request);
             if ("IGNORED".equals(response.getProcessingStatus())) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate or already completed)", response));
+            }
+            return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to process webhook: " + e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/product-sync")
+    public ResponseEntity<ApiResponse<ImsProductSyncResponseDto>> handleProductSync(
+            @RequestHeader(value = "X-Webhook-Secret", required = false) String secret,
+            @Valid @RequestBody ImsProductSyncRequestDto request) {
+
+        if (secret == null || !secret.equals(webhookSecret)) {
+            log.warn("Unauthorized webhook attempt. Invalid or missing secret.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(false, "Unauthorized: Invalid Webhook Secret", null));
+        }
+
+        try {
+            ImsProductSyncResponseDto response = imsWebhookService.handleProductSync(request);
+            if ("IGNORED".equals(response.getProcessingStatus())) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate product data)", response));
             }
             return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
         } catch (IllegalArgumentException e) {
