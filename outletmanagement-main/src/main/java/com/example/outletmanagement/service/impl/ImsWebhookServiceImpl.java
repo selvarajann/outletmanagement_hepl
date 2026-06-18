@@ -185,4 +185,44 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "SUCCESS");
     }
+
+    @Override
+    @Transactional
+    public com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto handleReturnCompletion(com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionRequestDto request) {
+        String payloadJson = "";
+        try {
+            payloadJson = objectMapper.writeValueAsString(request);
+        } catch (Exception ignored) {}
+
+        StockReturn stockReturn = stockReturnRepository.findByReturnCode(request.getReturnCode())
+                .orElseThrow(() -> new IllegalArgumentException("StockReturn not found: " + request.getReturnCode()));
+
+        // Idempotency check
+        if (stockReturn.getCompletionReferenceCode() != null && stockReturn.getCompletionReferenceCode().equals(request.getCompletionReferenceCode()) ||
+                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
+
+            log.warn("Duplicate completion webhook received for Return Code: {}", request.getReturnCode());
+            auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_DUPLICATE", "StockReturn", "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
+            return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "IGNORED");
+        }
+
+        // Status transition validation: Only PICKED_UP -> COMPLETED is allowed
+        if (stockReturn.getStatus() != com.example.outletmanagement.model.enums.StockReturnStatus.PICKED_UP) {
+            throw new IllegalArgumentException("Invalid state transition. StockReturn must be PICKED_UP to be marked as COMPLETED.");
+        }
+
+        stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED);
+        stockReturn.setCompletionReferenceCode(request.getCompletionReferenceCode());
+
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            stockReturn.setNotes(stockReturn.getNotes() != null ? stockReturn.getNotes() + " | IMS Completion: " + request.getNotes() : "IMS Completion: " + request.getNotes());
+        }
+
+        stockReturn.setUpdatedAt(LocalDateTime.now());
+        stockReturnRepository.save(stockReturn);
+
+        auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_RECEIVED", "StockReturn", "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
+
+        return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "SUCCESS");
+    }
 }

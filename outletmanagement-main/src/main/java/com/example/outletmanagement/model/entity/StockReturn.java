@@ -44,6 +44,9 @@ public class StockReturn {
     @Column(name = "pickup_reference_code")
     private String pickupReferenceCode;
 
+    @Column(name = "completion_reference_code")
+    private String completionReferenceCode;
+
     @Column(name = "ims_push_status")
     private String imsPushStatus; // PENDING, SUCCESS, FAILED
 

@@ -22,6 +22,7 @@ public class StockReturnResponseDto {
     private StockReturnStatus status;
     private String imsAckCode;
     private String pickupReferenceCode;
+    private String completionReferenceCode;
     private String imsPushStatus;
     private String notes;
     private String createdBy;
