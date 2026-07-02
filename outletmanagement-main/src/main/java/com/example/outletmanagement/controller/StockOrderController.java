@@ -63,17 +63,10 @@ public class StockOrderController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Order updated", stockOrderService.updateOrder(id, request)));
     }
 
-    @PatchMapping("/{id}/approve")
-    @com.example.outletmanagement.annotation.Idempotent
-    @AuditAction(action = "APPROVE_STOCK_ORDER", entity = "StockOrder")
-    public ResponseEntity<ApiResponse<StockOrderResponse>> approveOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Order approved", stockOrderService.approveOrder(id)));
-    }
-
-    @PatchMapping("/{id}/cancel")
-    @AuditAction(action = "CANCEL_STOCK_ORDER", entity = "StockOrder")
-    public ResponseEntity<ApiResponse<StockOrderResponse>> cancelOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Order cancelled", stockOrderService.cancelOrder(id)));
+    @PostMapping("/{id}/request-cancel")
+    @AuditAction(action = "REQUEST_CANCEL_STOCK_ORDER", entity = "StockOrder")
+    public ResponseEntity<ApiResponse<StockOrderResponse>> requestCancelOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Order cancellation requested", stockOrderService.requestCancelOrder(id)));
     }
 
     @DeleteMapping("/{id}")
@@ -88,5 +81,12 @@ public class StockOrderController {
     @AuditAction(action = "RETRY_IMS_PUSH", entity = "StockOrder")
     public ResponseEntity<ApiResponse<StockOrderResponse>> retryImsPush(@PathVariable Long id) {
         return ResponseEntity.ok(new ApiResponse<>(true, "IMS Push Retried", stockOrderService.retryImsPush(id)));
+    }
+
+    @GetMapping("/warehouse-products")
+    public ResponseEntity<ApiResponse<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse>> getWarehouseProducts(
+            @RequestParam Long outletId) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Warehouse products fetched", 
+                stockOrderService.getWarehouseProducts(outletId)));
     }
 }

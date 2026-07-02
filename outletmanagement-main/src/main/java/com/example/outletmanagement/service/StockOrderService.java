@@ -11,8 +11,9 @@ public interface StockOrderService {
     Page<StockOrderResponse> getAllOrders(String keyword, Long outletId, String status, LocalDate fromDate, LocalDate toDate, Pageable pageable);
     StockOrderResponse getOrderById(Long id);
     StockOrderResponse updateOrder(Long id, StockOrderRequest request);
-    StockOrderResponse approveOrder(Long id);
-    StockOrderResponse cancelOrder(Long id);
+    StockOrderResponse requestCancelOrder(Long id);
     void deleteOrder(Long id);
     StockOrderResponse retryImsPush(Long id);
+    com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse getWarehouseProducts(Long outletId);
+    void syncOrdersFromIms();
 }

@@ -4,18 +4,26 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.example.outletmanagement.payload.dto.EmailAttachment;
 import com.example.outletmanagement.service.EmailService;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.outletmanagement.model.entity.EmailQueue;
+import com.example.outletmanagement.repository.EmailQueueRepository;
+import java.util.stream.Collectors;
 
 /**
  * EmailServiceImpl — sends transactional HTML emails via Mailtrap SMTP.
@@ -30,6 +38,8 @@ public class EmailServiceImpl implements EmailService {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
 
     private final JavaMailSender mailSender;
+    private final EmailQueueRepository emailQueueRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.mail.from:noreply@outletmanagement.com}")
     private String fromAddress;
@@ -41,7 +51,7 @@ public class EmailServiceImpl implements EmailService {
     //  AUTH / USER
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendWelcomeEmail(String toEmail, String username, String role) {
         String subject = "Welcome to Outlet Management System 🎉";
         String html = baseLayout(subject,
@@ -61,7 +71,7 @@ public class EmailServiceImpl implements EmailService {
         send(toEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendLoginNotification(String toEmail, String username) {
         String subject = "New Login Detected – Outlet Management 🔐";
         String html = baseLayout(subject,
@@ -78,7 +88,7 @@ public class EmailServiceImpl implements EmailService {
         send(toEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendNewUserRegisteredAlert(String adminEmail, String username, String userEmail, String role) {
         String subject = "New User Registered: " + username;
         String html = baseLayout(subject,
@@ -97,7 +107,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendPasswordChangedEmail(String toEmail, String username) {
         String subject = "Your Password Has Been Changed";
         String html = baseLayout(subject,
@@ -118,7 +128,7 @@ public class EmailServiceImpl implements EmailService {
     //  USER MANAGEMENT
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendUserCreatedEmail(String toEmail, String username, String role, String rawPassword) {
         String subject = "Your Outlet Management Account Has Been Created";
         String html = baseLayout(subject,
@@ -137,7 +147,7 @@ public class EmailServiceImpl implements EmailService {
         send(toEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendUserUpdatedEmail(String toEmail, String username, String newRole, boolean isActive) {
         String subject = "Your Account Has Been Updated";
         String html = baseLayout(subject,
@@ -155,7 +165,7 @@ public class EmailServiceImpl implements EmailService {
         send(toEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendUserDeactivatedEmail(String toEmail, String username) {
         String subject = "Your Account Has Been Deactivated";
         String html = baseLayout(subject,
@@ -176,7 +186,7 @@ public class EmailServiceImpl implements EmailService {
     //  OUTLET
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendOutletCreatedEmail(String adminEmail, String outletName, String outletCode,
                                        String ownerName, String location) {
         String subject = "New Outlet Created: " + outletName;
@@ -195,7 +205,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendOutletUpdatedEmail(String adminEmail, String outletName, String outletCode) {
         String subject = "Outlet Updated: " + outletName;
         String html = baseLayout(subject,
@@ -211,7 +221,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendOutletDeletedEmail(String adminEmail, String outletName, String outletCode) {
         String subject = "Outlet Deleted: " + outletName;
         String html = baseLayout(subject,
@@ -232,7 +242,7 @@ public class EmailServiceImpl implements EmailService {
     //  STOCK ORDERS
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendStockOrderCreatedEmail(String adminEmail, Long orderId, String orderCode,
                                            String outletName, String placedBy,
                                            BigDecimal totalAmount, int itemCount) {
@@ -255,7 +265,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendStockOrderApprovedEmail(String toEmail, Long orderId, String orderCode, String outletName) {
         String subject = "✅ Stock Order Approved: " + orderCode;
         String html = baseLayout(subject,
@@ -274,7 +284,7 @@ public class EmailServiceImpl implements EmailService {
         send(toEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendStockOrderCancelledEmail(String toEmail, Long orderId, String orderCode, String outletName) {
         String subject = "❌ Stock Order Cancelled: " + orderCode;
         String html = baseLayout(subject,
@@ -296,7 +306,7 @@ public class EmailServiceImpl implements EmailService {
     //  PRODUCTS
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendProductCreatedEmail(String adminEmail, String productName, String productCode,
                                         String divisionName, BigDecimal sellingPrice) {
         String subject = "New Product Added: " + productName;
@@ -315,7 +325,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendProductDeletedEmail(String adminEmail, String productName, String productCode) {
         String subject = "Product Deleted: " + productName;
         String html = baseLayout(subject,
@@ -337,7 +347,7 @@ public class EmailServiceImpl implements EmailService {
     //  SALES
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendSaleCompletedEmail(String adminEmail, String referenceNo, String outletName,
                                        BigDecimal totalAmount, String soldBy, int itemCount) {
         String subject = "Sale Completed: " + referenceNo;
@@ -363,7 +373,7 @@ public class EmailServiceImpl implements EmailService {
     //  BATCHES
     // ════════════════════════════════════════════════════════════════
 
-    @Async @Override
+    @Override
     public void sendBatchReceivedEmail(String adminEmail, String batchCode, String outletName,
                                        String productName, int quantity) {
         String subject = "Batch Received: " + batchCode;
@@ -383,7 +393,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendProductUpdatedEmail(String adminEmail, String productName, String productCode, BigDecimal newSellingPrice) {
         String subject = "Product Updated: " + productName;
         String html = baseLayout(subject,
@@ -400,7 +410,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendDivisionCreatedEmail(String adminEmail, String name) {
         String subject = "New Division Created: " + name;
         String html = baseLayout(subject,
@@ -415,7 +425,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendDivisionUpdatedEmail(String adminEmail, String oldName, String newName) {
         String subject = "Division Updated: " + newName;
         String html = baseLayout(subject,
@@ -430,7 +440,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendDivisionDeletedEmail(String adminEmail, String name) {
         String subject = "Division Deleted: " + name;
         String html = baseLayout(subject,
@@ -445,7 +455,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendLocationCreatedEmail(String adminEmail, String name) {
         String subject = "New Location Created: " + name;
         String html = baseLayout(subject,
@@ -460,7 +470,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendLocationUpdatedEmail(String adminEmail, String oldName, String newName) {
         String subject = "Location Updated: " + newName;
         String html = baseLayout(subject,
@@ -475,7 +485,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendLocationDeletedEmail(String adminEmail, String name) {
         String subject = "Location Deleted: " + name;
         String html = baseLayout(subject,
@@ -490,7 +500,7 @@ public class EmailServiceImpl implements EmailService {
         send(adminEmail, subject, html);
     }
 
-    @Async @Override
+    @Override
     public void sendImportCompletedEmail(String adminEmail, String entityType, int imported, int failed, String failedFileUrl) {
         String subject = "Data Import Completed: " + entityType;
         String statusType = (failed == 0) ? "success" : "warning";
@@ -614,17 +624,32 @@ public class EmailServiceImpl implements EmailService {
 
     /** Core send method — wraps MimeMessage creation and Mailtrap delivery. */
     private void send(String to, String subject, String htmlBody) {
+        sendEmailWithAttachments(to, subject, htmlBody, null);
+    }
+
+    @Override
+    public void sendEmailWithAttachments(String toEmail, String subject, String htmlBody, List<EmailAttachment> attachments) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromAddress, fromName);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true); // true = HTML
-            mailSender.send(message);
-            log.info("📧 Email sent → to={} | subject={}", to, subject);
+            EmailQueue queue = new EmailQueue();
+            queue.setToAddress(toEmail);
+            queue.setSubject(subject);
+            queue.setBodyHtml(htmlBody);
+            
+            if (attachments != null && !attachments.isEmpty()) {
+                List<String> paths = attachments.stream()
+                        .map(EmailAttachment::getFilePath)
+                        .filter(p -> p != null && !p.isEmpty())
+                        .collect(Collectors.toList());
+                if (!paths.isEmpty()) {
+                    queue.setAttachmentPaths(objectMapper.writeValueAsString(paths));
+                }
+            }
+            
+            emailQueueRepository.save(queue);
+            log.info("📥 Queued email → to={} | subject={}", toEmail, subject);
         } catch (Exception e) {
-            log.error("❌ Email failed → to={} | subject={} | error={}", to, subject, e.getMessage(), e);
+            log.error("❌ Failed to queue email → to={} | subject={} | error={}", toEmail, subject, e.getMessage(), e);
         }
     }
+
 }

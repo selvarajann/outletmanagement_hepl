@@ -3,22 +3,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
 import { C } from "../../theme/colors";
-
-const fieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 2, fontSize: 13, backgroundColor: C.white,
-    "& fieldset": { borderColor: C.border },
-    "&:hover fieldset": { borderColor: C.blue },
-    "&.Mui-focused fieldset": { borderColor: C.blue },
-  },
-};
+import { filterFieldSx, filterWrapperSx } from "../../theme/styles";
 
 export default function LocationFilter({ filters, onChange }) {
   const activeCount = [filters.keyword].filter(Boolean).length;
   const handleReset = () => onChange({ keyword: "" });
 
   return (
-    <Box sx={{ width: "100%", p: 2, backgroundColor: C.white, borderRadius: "14px" }}>
+    <Box sx={filterWrapperSx}>
       <Box display="flex" alignItems="center" gap={1} mb={1.5}>
         <FilterListIcon sx={{ fontSize: 16, color: C.slateMid }} />
         <Box component="span" sx={{ fontSize: "11px", fontWeight: 700, color: C.slateMid, textTransform: "uppercase", letterSpacing: 0.8 }}>Filters</Box>
@@ -39,7 +31,7 @@ export default function LocationFilter({ filters, onChange }) {
           size="small"
           value={filters.keyword}
           onChange={(e) => onChange({ ...filters, keyword: e.target.value })}
-          sx={{ ...fieldSx, minWidth: 260 }}
+          sx={{ ...filterFieldSx, minWidth: 260 }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: C.slateMid }} /></InputAdornment> }}
         />
       </Box>

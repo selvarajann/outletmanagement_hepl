@@ -52,10 +52,10 @@ export default function Stock() {
   const uniqueOutlets = [...new Set(rows.map((r) => r.outletName).filter(Boolean))].length;
 
   const cards = [
-    { title: "Total Products", value: rows.length, icon: <Inventory2Icon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Total Quantity", value: totalQty, icon: <WarehouseIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
-    { title: "Outlets Tracked", value: uniqueOutlets, icon: <StoreIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.emerald, bgColor: C.emerald },
-    { title: "Low Stock Items", value: lowStock, icon: <WarningAmberIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.red, bgColor: C.red },
+    { title: "Total Products",  value: rows.length,   icon: <Inventory2Icon   />, color: C.blue    },
+    { title: "Total Quantity",  value: totalQty,      icon: <WarehouseIcon    />, color: C.teal    },
+    { title: "Outlets Tracked", value: uniqueOutlets, icon: <StoreIcon        />, color: C.emerald },
+    { title: "Low Stock Items", value: lowStock,      icon: <WarningAmberIcon />, color: C.rose    },
   ];
 
   return (

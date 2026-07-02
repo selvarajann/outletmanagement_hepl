@@ -5,23 +5,16 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
 import { GetOutlets } from "../../services/OutletService";
 import { C } from "../../theme/colors";
-
-const fieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 2, fontSize: 13, backgroundColor: C.white,
-    "& fieldset": { borderColor: C.border },
-    "&:hover fieldset": { borderColor: C.blue },
-    "&.Mui-focused fieldset": { borderColor: C.blue },
-  },
-  "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
-};
+import { filterFieldSx, filterWrapperSx } from "../../theme/styles";
 
 export default function BatchFilter({ filters, onChange }) {
   const [outlets, setOutlets] = useState([]);
 
   useEffect(() => {
     const controller = new AbortController();
-    GetOutlets({ page: 0, size: 10 }, controller.signal).then((r) => setOutlets(r.outlets)).catch(() => {});
+    GetOutlets({ page: 0, size: 50 }, controller.signal)
+      .then((r) => setOutlets(r.outlets))
+      .catch(() => {});
     return () => controller.abort();
   }, []);
 
@@ -31,7 +24,7 @@ export default function BatchFilter({ filters, onChange }) {
   const handleReset = () => onChange({ keyword: "", outletId: "", status: "", fromDate: "", toDate: "" });
 
   return (
-    <Box sx={{ p: 2, mb: 2.5, backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "14px", width: "100%" }}>
+    <Box sx={filterWrapperSx}>
       <Box display="flex" alignItems="center" gap={1} mb={1.5}>
         <FilterListIcon sx={{ fontSize: 16, color: C.slateMid }} />
         <Box component="span" sx={{ fontSize: "11px", fontWeight: 700, color: C.slateMid, textTransform: "uppercase", letterSpacing: 0.8 }}>Filters</Box>
@@ -45,27 +38,17 @@ export default function BatchFilter({ filters, onChange }) {
           </Button>
         )}
       </Box>
+
       <Box display="flex" flexWrap="wrap" gap={1.5}>
         <TextField placeholder="Search batch code..." size="small" value={filters.keyword}
           onChange={(e) => onChange({ ...filters, keyword: e.target.value })}
-          sx={{ ...fieldSx, minWidth: 220 }}
+          sx={{ ...filterFieldSx, flexGrow: 1, minWidth: 220 }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: C.slateMid }} /></InputAdornment> }} />
         
-        <FormControl size="small" sx={{ ...fieldSx, minWidth: 160 }}>
-          <InputLabel>Outlet</InputLabel>
-          <Select value={filters.outletId} label="Outlet"
-            onChange={(e) => onChange({ ...filters, outletId: e.target.value })}
-            sx={{ borderRadius: 2, fontSize: 13 }}>
-            <MenuItem value=""><em>All Outlets</em></MenuItem>
-            {outlets.map((o) => <MenuItem key={o.id} value={o.id}>{o.outletName}</MenuItem>)}
-          </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ ...fieldSx, minWidth: 140 }}>
+        <FormControl size="small" sx={{ ...filterFieldSx, minWidth: 160 }}>
           <InputLabel>Status</InputLabel>
           <Select value={filters.status} label="Status"
-            onChange={(e) => onChange({ ...filters, status: e.target.value })}
-            sx={{ borderRadius: 2, fontSize: 13 }}>
+            onChange={(e) => onChange({ ...filters, status: e.target.value })}>
             <MenuItem value=""><em>All Statuses</em></MenuItem>
             <MenuItem value="PROCESSING">Processing</MenuItem>
             <MenuItem value="DELIVERED">Delivered</MenuItem>
@@ -73,13 +56,22 @@ export default function BatchFilter({ filters, onChange }) {
           </Select>
         </FormControl>
 
+        <FormControl size="small" sx={{ ...filterFieldSx, minWidth: 180 }}>
+          <InputLabel>Outlet</InputLabel>
+          <Select value={filters.outletId} label="Outlet"
+            onChange={(e) => onChange({ ...filters, outletId: e.target.value })}>
+            <MenuItem value=""><em>All Outlets</em></MenuItem>
+            {outlets.map((o) => <MenuItem key={o.id} value={o.id}>{o.outletName}</MenuItem>)}
+          </Select>
+        </FormControl>
+
         <TextField label="From Date" size="small" type="date" value={filters.fromDate}
           onChange={(e) => onChange({ ...filters, fromDate: e.target.value })}
-          sx={{ ...fieldSx, width: 150 }} InputLabelProps={{ shrink: true }} />
+          sx={{ ...filterFieldSx, width: 140 }} InputLabelProps={{ shrink: true }} />
 
         <TextField label="To Date" size="small" type="date" value={filters.toDate}
           onChange={(e) => onChange({ ...filters, toDate: e.target.value })}
-          sx={{ ...fieldSx, width: 150 }} InputLabelProps={{ shrink: true }} />
+          sx={{ ...filterFieldSx, width: 140 }} InputLabelProps={{ shrink: true }} />
       </Box>
     </Box>
   );

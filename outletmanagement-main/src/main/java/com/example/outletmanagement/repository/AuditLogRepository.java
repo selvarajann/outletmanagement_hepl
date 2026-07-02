@@ -60,4 +60,9 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
      * @return number of records deleted
      */
     long deleteByCreatedAtBefore(LocalDateTime threshold);
+
+    /**
+     * Finds all audit entries older than the given threshold.
+     */
+    java.util.List<AuditLog> findByCreatedAtBefore(LocalDateTime threshold);
 }

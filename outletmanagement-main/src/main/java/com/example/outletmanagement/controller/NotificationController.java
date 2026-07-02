@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -73,6 +74,13 @@ public class NotificationController {
         UserDetails user = extractUserDetails(request);
         notificationService.markAllReadForUser(user.username(), user.role());
         return ResponseEntity.ok(new ApiResponse<>(true, "All notifications marked as read", null));
+    }
+
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<ApiResponse<Void>> markSingleRead(
+            @PathVariable Long id) {
+        notificationService.markSingleRead(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Notification marked as read", null));
     }
 
     @DeleteMapping("/{id}")

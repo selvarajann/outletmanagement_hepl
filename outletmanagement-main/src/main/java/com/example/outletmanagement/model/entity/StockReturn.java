@@ -48,7 +48,11 @@ public class StockReturn {
     private String completionReferenceCode;
 
     @Column(name = "ims_push_status")
-    private String imsPushStatus; // PENDING, SUCCESS, FAILED
+    private String imsPushStatus; // PENDING, SUCCESS, FAILED, DEAD_LETTER
+
+    /** Phase 12: Retry counter for failed IMS return pushes. Dead-letter at 5. */
+    @Column(name = "ims_push_retry_count")
+    private Integer imsPushRetryCount = 0;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

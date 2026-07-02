@@ -77,17 +77,18 @@ const NotificationItem = ({ notification, onDelete }) => {
         alignItems: "flex-start",
         bgcolor: notification.read ? C.surface : C.blueLight,
         borderRadius: "12px",
-        borderLeft: `4px solid ${getBorderColor(notification.type)}`,
+        borderLeft: `4px solid ${notification.read ? C.border : getBorderColor(notification.type)}`,
         boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         transition: "all 0.2s ease-in-out",
         animation: `${fadeIn} 0.3s ease-out forwards`,
+        opacity: notification.read ? 0.7 : 1,
         "&:hover": {
           bgcolor: notification.read ? C.bgMuted : "#e0e7ff",
           transform: "translateY(-1px)",
         },
       }}
     >
-      <ListItemIcon sx={{ minWidth: 40, mt: 0.5 }}>
+      <ListItemIcon sx={{ minWidth: 40, mt: 0.5, opacity: notification.read ? 0.5 : 1, filter: notification.read ? 'grayscale(100%)' : 'none' }}>
         {getIcon(notification.type)}
       </ListItemIcon>
       

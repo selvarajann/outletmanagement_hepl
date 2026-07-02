@@ -15,7 +15,7 @@ import StockOrderItemsDialog from "../components/StockOrders/StockOrderItemsDial
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import {
   GetStockOrders, CreateStockOrder, UpdateStockOrder,
-  ApproveStockOrder, CancelStockOrder, DeleteStockOrder, GetStockOrderById, RetryImsPush
+  DeleteStockOrder, GetStockOrderById, RetryImsPush, RequestCancelStockOrder
 } from "../services/StockOrderService";
 import usePaginatedFetch from "../hooks/usePaginatedFetch";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
@@ -92,7 +92,6 @@ export default function StockOrder() {
     }
   };
 
-  const requestApprove = useCallback((id) => setConfirmState({ open: true, type: "APPROVE", id }), []);
   const requestCancel = useCallback((id) => setConfirmState({ open: true, type: "CANCEL", id }), []);
   const requestDelete = useCallback((id) => setConfirmState({ open: true, type: "DELETE", id }), []);
 
@@ -100,12 +99,9 @@ export default function StockOrder() {
     const { type, id } = confirmState;
     if (!id) return;
     try {
-      if (type === "APPROVE") {
-        await ApproveStockOrder(id);
-        toast.success("Order approved! Batch generated.");
-      } else if (type === "CANCEL") {
-        await CancelStockOrder(id);
-        toast.success("Order cancelled!");
+      if (type === "CANCEL") {
+        await RequestCancelStockOrder(id);
+        toast.success("Order cancellation requested!");
       } else if (type === "DELETE") {
         await DeleteStockOrder(id);
         toast.success("Order deleted!");
@@ -145,10 +141,10 @@ export default function StockOrder() {
   const totalAmount = rows.reduce((s, o) => s + (o.totalAmount || 0), 0);
 
   const cards = [
-    { title: "Total Orders", value: rows.length, icon: <ShoppingCartIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Pending", value: pending, icon: <HourglassEmptyIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.amber, bgColor: C.amber },
-    { title: "Approved / Fulfilled", value: approved, icon: <CheckCircleIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.emerald, bgColor: C.emerald },
-    { title: "Total Amount", value: `₹${totalAmount.toLocaleString("en-IN")}`, icon: <CurrencyRupeeIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
+    { title: "Total Orders",          value: rows.length,                                    icon: <ShoppingCartIcon    />, color: C.blue    },
+    { title: "Pending",               value: pending,                                        icon: <HourglassEmptyIcon  />, color: C.amber   },
+    { title: "Approved / Fulfilled",  value: approved,                                       icon: <CheckCircleIcon     />, color: C.emerald },
+    { title: "Total Amount",          value: `₹${totalAmount.toLocaleString("en-IN")}`,     icon: <CurrencyRupeeIcon   />, color: C.teal    },
   ];
 
   return (
@@ -170,7 +166,7 @@ export default function StockOrder() {
         <Box display="flex" justifyContent="center" py={10}><CircularProgress /></Box>
       ) : rows?.length > 0 ? (
         <>
-          <StockOrderTable orders={rows} onEdit={handleOpen} onDelete={requestDelete} onApprove={requestApprove} onCancel={requestCancel} onView={setViewItem} onViewItems={handleViewItems} onRetryIms={handleRetryIms} />
+          <StockOrderTable orders={rows} onEdit={handleOpen} onDelete={requestDelete} onCancel={requestCancel} onView={setViewItem} onViewItems={handleViewItems} onRetryIms={handleRetryIms} />
           <StockOrderPagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       ) : (
@@ -205,14 +201,13 @@ export default function StockOrder() {
 
       <ConfirmDialog
         open={confirmState.open}
-        title={confirmState.type === "APPROVE" ? "Approve Order" : confirmState.type === "CANCEL" ? "Cancel Order" : "Delete Order"}
+        title={confirmState.type === "CANCEL" ? "Cancel Order" : "Delete Order"}
         message={
-          confirmState.type === "APPROVE" ? "Approve this order and generate a batch?" :
-          confirmState.type === "CANCEL" ? "Are you sure you want to cancel this order?" :
+          confirmState.type === "CANCEL" ? "Are you sure you want to request cancellation for this order?" :
           "Are you sure you want to delete this order? This action cannot be undone."
         }
-        confirmText={confirmState.type === "APPROVE" ? "Approve" : confirmState.type === "CANCEL" ? "Cancel Order" : "Delete"}
-        confirmColor={confirmState.type === "APPROVE" ? "success" : "error"}
+        confirmText={confirmState.type === "CANCEL" ? "Cancel Order" : "Delete"}
+        confirmColor={"error"}
         onConfirm={executeConfirmAction}
         onClose={() => setConfirmState({ open: false, type: "", id: null })}
       />

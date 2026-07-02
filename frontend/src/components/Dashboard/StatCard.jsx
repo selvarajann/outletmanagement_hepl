@@ -17,7 +17,7 @@ const StatCard = ({ title, value, icon, accentColor, bgColor, trend, trendUp }) 
     className="card-enter"
     sx={{
       borderRadius: "14px",
-      bgcolor: "#fff",
+      bgcolor: C.white,
       border: `1px solid ${C.border}`,
       overflow: "hidden",
       position: "relative",

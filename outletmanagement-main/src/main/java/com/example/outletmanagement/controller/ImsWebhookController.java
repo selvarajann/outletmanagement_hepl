@@ -8,6 +8,12 @@ import com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupRequestDt
 import com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto;
 import com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionRequestDto;
 import com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsStockOrderStatusRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsStockOrderStatusResponseDto;
 import com.example.outletmanagement.payload.response.ApiResponse;
 import com.example.outletmanagement.service.ImsWebhookService;
 import jakarta.validation.Valid;
@@ -44,6 +50,58 @@ public class ImsWebhookController {
             ImsDispatchWebhookResponseDto response = imsWebhookService.handleDispatch(request);
             if ("IGNORED".equals(response.getStatus())) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate IMS reference code)", response));
+            }
+            return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to process webhook: " + e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/batch-sync")
+    public ResponseEntity<ApiResponse<ImsBatchSyncResponseDto>> handleBatchSync(
+            @RequestHeader(value = "X-Webhook-Secret", required = false) String secret,
+            @Valid @RequestBody ImsBatchSyncRequestDto request) {
+
+        if (secret == null || !secret.equals(webhookSecret)) {
+            log.warn("Unauthorized webhook attempt. Invalid or missing secret.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(false, "Unauthorized: Invalid Webhook Secret", null));
+        }
+
+        try {
+            ImsBatchSyncResponseDto response = imsWebhookService.handleBatchSync(request);
+            if ("IGNORED".equals(response.getProcessingStatus())) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate batch info)", response));
+            }
+            return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to process webhook: " + e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/product-sync")
+    public ResponseEntity<ApiResponse<ImsProductSyncResponseDto>> handleProductSync(
+            @RequestHeader(value = "X-Webhook-Secret", required = false) String secret,
+            @Valid @RequestBody ImsProductSyncRequestDto request) {
+
+        if (secret == null || !secret.equals(webhookSecret)) {
+            log.warn("Unauthorized webhook attempt. Invalid or missing secret.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(false, "Unauthorized: Invalid Webhook Secret", null));
+        }
+
+        try {
+            ImsProductSyncResponseDto response = imsWebhookService.handleProductSync(request);
+            if ("IGNORED".equals(response.getProcessingStatus())) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate product info)", response));
             }
             return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
         } catch (IllegalArgumentException e) {
@@ -122,6 +180,32 @@ public class ImsWebhookController {
             ReturnCompletionResponseDto response = imsWebhookService.handleReturnCompletion(request);
             if ("IGNORED".equals(response.getProcessingStatus())) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate or already completed)", response));
+            }
+            return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to process webhook: " + e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/stock-order-status")
+    public ResponseEntity<ApiResponse<ImsStockOrderStatusResponseDto>> handleStockOrderStatus(
+            @RequestHeader(value = "X-Webhook-Secret", required = false) String secret,
+            @Valid @RequestBody ImsStockOrderStatusRequestDto request) {
+
+        if (secret == null || !secret.equals(webhookSecret)) {
+            log.warn("Unauthorized webhook attempt. Invalid or missing secret.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse<>(false, "Unauthorized: Invalid Webhook Secret", null));
+        }
+
+        try {
+            ImsStockOrderStatusResponseDto response = imsWebhookService.handleStockOrderStatus(request);
+            if ("IGNORED".equals(response.getProcessingStatus())) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Webhook ignored (duplicate or same status)", response));
             }
             return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", response));
         } catch (IllegalArgumentException e) {

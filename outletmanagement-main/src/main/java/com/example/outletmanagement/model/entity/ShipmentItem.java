@@ -34,4 +34,7 @@ public class ShipmentItem {
     private LocalDate mfgDate;
     
     private LocalDate expiryDate;
+
+    /** IMS batch code recorded at dispatch time, populated from ImsDispatchWebhookRequestDto items. */
+    private String imsBatchCode;
 }

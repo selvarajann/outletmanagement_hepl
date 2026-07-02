@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  oms-app:
+    build: .
+    container_name: oms-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=root_password
+      - REDIS_HOST=redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - oms-network
+
+  db:
+    image: mysql:8.0
+    container_name: oms-db
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=outlet_db
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - oms-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: oms-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - oms-network
+
+volumes:
+  db_data:
+
+networks:
+  oms-network:
+    driver: bridge

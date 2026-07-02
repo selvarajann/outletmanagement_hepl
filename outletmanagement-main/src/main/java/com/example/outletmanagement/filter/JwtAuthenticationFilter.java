@@ -45,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.contains("/api/v1/auth/validate") ||
             path.contains("/api/v1/auth/refresh") ||
             path.contains("/api/v1/auth/logout") ||
+            path.contains("/api/test-scheduler") ||
             path.contains("/api/webhook/ims/dispatch") ||
             path.contains("/swagger-ui") ||
             path.contains("/v3/api-docs") ||

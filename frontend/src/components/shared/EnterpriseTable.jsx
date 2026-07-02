@@ -4,6 +4,7 @@ import {
 } from "@mui/material";
 import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
 import { C } from "../../theme/colors";
+import { enterpriseHeaderSx, enterpriseRowSx } from "../../theme/styles";
 
 import { memo } from "react";
 
@@ -32,21 +33,9 @@ export default memo(function EnterpriseTable({ columns = [], rows, data, emptyMe
             <TableRow>
               {columns.map((col, i) => (
                 <TableCell
-                  key={isObjectColumns ? col.label : col}
+                  key={isObjectColumns ? `${col.label}-${i}` : `${col}-${i}`}
                   align={isObjectColumns ? (col.align || "left") : "left"}
-                  sx={{
-                    backgroundColor: C.bgMuted,
-                    color: C.slateMid,
-                    fontWeight: 700,
-                    fontSize: "11px",
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                    py: 1.5,
-                    px: 2.5,
-                    borderBottom: `1px solid ${C.border}`,
-                    whiteSpace: "nowrap",
-                    "&:last-child": { pr: 2.5 },
-                  }}
+                  sx={enterpriseHeaderSx}
                 >
                   {isObjectColumns ? col.label : col}
                 </TableCell>
@@ -67,12 +56,7 @@ export default memo(function EnterpriseTable({ columns = [], rows, data, emptyMe
                 tableData.map((row, rowIdx) => (
                   <TableRow
                     key={row.id ?? rowIdx}
-                    sx={{
-                      backgroundColor: C.white,
-                      transition: "background-color 0.15s ease",
-                      "&:hover": { backgroundColor: C.bgMuted },
-                      "&:last-child td": { borderBottom: "none" },
-                    }}
+                    sx={enterpriseRowSx}
                   >
                     {columns.map((col, colIdx) => (
                       <TableCell
@@ -87,7 +71,7 @@ export default memo(function EnterpriseTable({ columns = [], rows, data, emptyMe
                           borderBottom: `1px solid ${C.border}`,
                         }}
                       >
-                        {col.render ? col.render(row) : row[col.key]}
+                        {col.render ? col.render(row, rowIdx) : row[col.key]}
                       </TableCell>
                     ))}
                   </TableRow>

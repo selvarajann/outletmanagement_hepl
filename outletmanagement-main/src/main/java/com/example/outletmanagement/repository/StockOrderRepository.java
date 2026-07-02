@@ -28,4 +28,13 @@ public interface StockOrderRepository extends JpaRepository<StockOrder, Long>, J
     // Check existence for multiple outlet IDs in one query
     @Query("SELECT DISTINCT o.outlet.id FROM StockOrder o WHERE o.outlet.id IN :outletIds")
     List<Long> findOutletIdsWithOrders(@Param("outletIds") List<Long> outletIds);
+
+    // Phase 12: Retry scheduler query
+    @Query("SELECT o FROM StockOrder o WHERE o.imsPushStatus = :status AND o.imsPushRetryCount < :maxRetries")
+    List<StockOrder> findByImsPushStatusAndImsPushRetryCountLessThan(
+            @Param("status") String status,
+            @Param("maxRetries") int maxRetries,
+            org.springframework.data.domain.Pageable pageable);
+
+    List<StockOrder> findByImsPushStatus(String status);
 }

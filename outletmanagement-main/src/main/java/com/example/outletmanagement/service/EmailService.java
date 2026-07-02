@@ -1,6 +1,9 @@
 package com.example.outletmanagement.service;
 
 import java.math.BigDecimal;
+import java.util.List;
+
+import com.example.outletmanagement.payload.dto.EmailAttachment;
 
 public interface EmailService {
     void sendWelcomeEmail(String toEmail, String username, String role);
@@ -28,5 +31,8 @@ public interface EmailService {
     void sendLocationUpdatedEmail(String adminEmail, String oldName, String newName);
     void sendLocationDeletedEmail(String adminEmail, String name);
     void sendImportCompletedEmail(String adminEmail, String entityType, int imported, int failed, String failedFileUrl);
+    
+    // Enterprise Schedulers / Attachment Support
+    void sendEmailWithAttachments(String toEmail, String subject, String htmlBody, List<EmailAttachment> attachments);
 }
 

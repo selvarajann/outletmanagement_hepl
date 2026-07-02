@@ -5,14 +5,14 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import { C } from "../../theme/colors";
 
 const SummaryCard = ({ title, value, subtitle, icon: Icon, color }) => (
-  <Paper sx={{ p: 2, borderRadius: 3, border: `1px solid ${C.border}`, boxShadow: "none" }}>
+  <Paper sx={{ p: 2, borderRadius: 3, border: `1px solid ${C.border}`, boxShadow: "none", bgcolor: C.white }}>
     <Box display="flex" justifyContent="space-between" alignItems="flex-start">
       <Box>
         <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 700, textTransform: "uppercase" }}>{title}</Typography>
-        <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.5, color: C.slate }}>{value}</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.5, color: C.navy }}>{value}</Typography>
         <Typography variant="caption" sx={{ color: color, fontWeight: 600 }}>{subtitle}</Typography>
       </Box>
-      <Box sx={{ p: 1, borderRadius: 2, backgroundColor: `${color}15`, color: color }}>
+      <Box sx={{ p: 1, borderRadius: 2, backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color: color }}>
         <Icon />
       </Box>
     </Box>
@@ -30,15 +30,15 @@ export default function StockSummary({ summary }) {
     <Grid container spacing={2} mb={3}>
       <Grid item xs={12} md={4}>
         <SummaryCard title="Total Stock Value" value={`₹${totalStockValue.toLocaleString()}`} 
-          subtitle="Across all outlets" icon={PaymentsIcon} color={C.blue} />
+          subtitle="Across all outlets" icon={PaymentsIcon} color={C.navy} />
       </Grid>
       <Grid item xs={12} md={4}>
         <SummaryCard title="Low Stock Items" value={totalLowStock} 
-          subtitle="Items with 0 quantity" icon={WarningAmberIcon} color={C.red} />
+          subtitle="Items with 0 quantity" icon={WarningAmberIcon} color={C.navy} />
       </Grid>
       <Grid item xs={12} md={4}>
         <SummaryCard title="Active Outlets" value={summary.length} 
-          subtitle="Outlets with inventory" icon={InventoryIcon} color={C.teal} />
+          subtitle="Outlets with inventory" icon={InventoryIcon} color={C.navy} />
       </Grid>
     </Grid>
   );

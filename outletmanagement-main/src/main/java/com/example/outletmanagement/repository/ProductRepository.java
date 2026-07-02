@@ -1,6 +1,7 @@
 package com.example.outletmanagement.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -10,5 +11,6 @@ public interface ProductRepository extends JpaRepository<Products, Long>, JpaSpe
 
     boolean existsByName(String name);
     boolean existsByProductCode(String productCode);
+    Optional<Products> findByProductCode(String productCode);
     List<Products> findByDivision_Id(Long divisionId);
 }

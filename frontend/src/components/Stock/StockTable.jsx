@@ -14,7 +14,7 @@ export default function StockTable({ stock, onView }) {
     { label: "Outlet",       render: (row) => row.outletName },
     { label: "Quantity",     render: (row) => (
       <Chip label={row.quantity} size="small"
-        sx={{ fontWeight: 700, backgroundColor: row.quantity > 10 ? "#f1f5f9" : "#fef2f2", color: row.quantity > 10 ? "#475569" : C.red }} />
+        sx={{ fontWeight: 700, backgroundColor: row.quantity > 10 ? C.bgMuted : C.redLight, color: row.quantity > 10 ? C.slate : C.red }} />
     )},
     { label: "Last Batch",   render: (row) => (
       <Chip label={row.lastBatchCode} size="small" sx={{ fontSize: 10, backgroundColor: C.blueLight, color: C.blue }} />

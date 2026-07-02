@@ -79,6 +79,29 @@ public class RoleAuthorizationFilter implements Filter {
                 return;
             }
         }
+
+        // Restrict warehouse products to INVENTORY_MANAGER only
+        if (path.startsWith("/api/v1/warehouse-products")) {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                try {
+                    String role = jwtUtil.extractRole(token);
+                    if (!"INVENTORY_MANAGER".equals(role)) {
+                        httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        httpResponse.getWriter().write("{\"success\":false,\"message\":\"Access Denied: Requires INVENTORY_MANAGER role\"}");
+                        return;
+                    }
+                } catch (Exception e) {
+                    httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    httpResponse.getWriter().write("{\"success\":false,\"message\":\"Invalid Token\"}");
+                    return;
+                }
+            } else {
+                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                httpResponse.getWriter().write("{\"success\":false,\"message\":\"Missing Token\"}");
+                return;
+            }
+        }
         
         chain.doFilter(request, response);
     }

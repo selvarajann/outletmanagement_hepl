@@ -56,6 +56,14 @@ public class Notification {
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
 
+    /** Phase 13: Deep-link support — frontend uses this to navigate to the related entity. */
+    @Column(name = "reference_id")
+    private Long referenceId;
+
+    /** Phase 13: Deep-link type, e.g. 'BATCH_ITEM', 'SHIPMENT', 'STOCK_ORDER'. */
+    @Column(name = "reference_type", length = 50)
+    private String referenceType;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

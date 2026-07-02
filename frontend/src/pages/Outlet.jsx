@@ -12,7 +12,7 @@ import { toast } from "react-toastify";
 import OutletTable from "../components/Outlets/OutletTable";
 import OutletForm from "../components/Outlets/OutletForm";
 import OutletFilter from "../components/Outlets/OutletFilter";
-import OutletPagination from "../components/Outlets/OutletPagination";
+import TablePagination from "../components/shared/TablePagination";
 import PageHeader from "../components/shared/PageHeader";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import { C } from "../theme/colors";
@@ -107,14 +107,14 @@ export default function Outlet() {
   const uniqueLocations = [...new Set(outlets.map((o) => o.locationName).filter(Boolean))].length;
 
   const cards = [
-    { title: "Total Outlets", value: loading ? "—" : outlets.length, icon: <StoreIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Unique Locations", value: loading ? "—" : uniqueLocations, icon: <LocationOnIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.amber, bgColor: C.amber },
-    { title: "Top Outlet Type", value: loading ? "—" : topType, icon: <CategoryIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
-    { title: "Owners Registered", value: loading ? "—" : [...new Set(outlets.map((o) => o.ownerName).filter(Boolean))].length, icon: <PersonIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.emerald, bgColor: C.emerald },
+    { title: "Total Outlets",      value: loading ? "—" : outlets.length,                                                                       icon: <StoreIcon       />, color: C.blue    },
+    { title: "Unique Locations",   value: loading ? "—" : uniqueLocations,                                                                      icon: <LocationOnIcon  />, color: C.amber   },
+    { title: "Top Outlet Type",    value: loading ? "—" : topType,                                                                              icon: <CategoryIcon    />, color: C.teal    },
+    { title: "Owners Registered",  value: loading ? "—" : [...new Set(outlets.map((o) => o.ownerName).filter(Boolean))].length,                  icon: <PersonIcon      />, color: C.emerald },
   ];
 
   return (
-    <Box sx={{ backgroundColor: C.surface, minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
       <PageHeader title="Outlets" subtitle="Manage your outlet network" onAdd={() => handleOpen()} addLabel="Add Outlet" />
       <Grid container spacing={2.5} mb={3}>
         {cards.map((c) => (
@@ -126,7 +126,7 @@ export default function Outlet() {
       <OutletFilter filters={filters} onChange={handleFilterChange} />
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
       {!loading && <OutletTable outlets={outlets} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
-      <OutletPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <OutletForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
 
       <ViewDialog open={!!viewItem} onClose={() => setViewItem(null)} title="Outlet Details" maxWidth="md">

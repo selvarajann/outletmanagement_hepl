@@ -34,6 +34,11 @@ public interface NotificationService {
     void markAllReadForUser(String username, String role);
 
     /**
+     * Marks a single notification as read by ID.
+     */
+    void markSingleRead(Long id);
+
+    /**
      * Deletes a specific notification.
      */
     void deleteNotification(Long id);

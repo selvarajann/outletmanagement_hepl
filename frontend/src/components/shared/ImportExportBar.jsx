@@ -182,7 +182,7 @@ export default function ImportExportBar({
             variant="text"
             endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
             onClick={(e) => setTemplateAnchor(e.currentTarget)}
-            sx={{ ...btnBase, color: C.slate, "&:hover": { backgroundColor: alpha(C.slate, 0.06) } }}
+            sx={{ ...btnBase, color: C.slate, "&:hover": { backgroundColor: alpha("#64748b", 0.06) } }}
           >
             Template
           </Button>
@@ -202,7 +202,7 @@ export default function ImportExportBar({
             endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
             onClick={(e) => setExportAnchor(e.currentTarget)}
             disabled={exportRows.length === 0}
-            sx={{ ...btnBase, color: C.navy, borderColor: C.border, "&:hover": { borderColor: C.navy, backgroundColor: alpha(C.navy, 0.04) } }}
+            sx={{ ...btnBase, color: C.navy, borderColor: C.border, "&:hover": { borderColor: C.navy, backgroundColor: alpha("#0f172a", 0.04) } }}
           >
             Export
           </Button>
@@ -258,13 +258,13 @@ export default function ImportExportBar({
             onClick={() => fileInputRef.current?.click()}
             sx={{
               border: `2px dashed ${isDragOver ? C.blue : C.border}`,
-              backgroundColor: isDragOver ? alpha(C.blue, 0.04) : alpha(C.slate, 0.02),
+              backgroundColor: isDragOver ? alpha("#2563eb", 0.04) : alpha("#64748b", 0.02),
               borderRadius: 3,
               p: 5,
               textAlign: "center",
               cursor: "pointer",
               transition: "all 0.2s ease-in-out",
-              "&:hover": { borderColor: C.blue, backgroundColor: alpha(C.blue, 0.02) }
+              "&:hover": { borderColor: C.blue, backgroundColor: alpha("#2563eb", 0.02) }
             }}
           >
             <input ref={fileInputRef} type="file" accept={uploadType === 'csv' ? ".csv" : ".xlsx, .xls"} style={{ display: "none" }} onChange={handleFileChange} />
@@ -273,7 +273,7 @@ export default function ImportExportBar({
             <Typography sx={{ fontSize: 12, color: C.slate }}>Supports a single {uploadType === 'csv' ? '.csv' : '.xlsx or .xls'} file</Typography>
           </Box>
           {selectedFile && (
-            <Box sx={{ mt: 3, p: 2, borderRadius: 2, backgroundColor: alpha(C.blue, 0.05), border: `1px solid ${alpha(C.blue, 0.2)}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ mt: 3, p: 2, borderRadius: 2, backgroundColor: alpha("#2563eb", 0.05), border: `1px solid ${alpha("#2563eb", 0.2)}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <ArticleIcon sx={{ color: C.blue }} />
               <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
                 <Typography noWrap sx={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{selectedFile.name}</Typography>
@@ -303,18 +303,18 @@ export default function ImportExportBar({
           {result && (
             <>
               <Box display="flex" gap={1.5} mb={2.5} flexWrap="wrap">
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, px: 2, py: 1, borderRadius: 2, backgroundColor: "#ecfdf5", border: "1px solid #bbf7d0" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, px: 2, py: 1, borderRadius: 2, backgroundColor: C.emeraldLight, border: `1px solid ${C.emeraldMid}` }}>
                   <CheckCircleOutlineIcon sx={{ color: C.emerald, fontSize: 18 }} />
                   <Box><Typography sx={{ fontSize: 18, fontWeight: 800, color: C.emerald, lineHeight: 1 }}>{result.imported}</Typography><Typography sx={{ fontSize: 10, color: C.emerald, fontWeight: 600 }}>IMPORTED</Typography></Box>
                 </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, px: 2, py: 1, borderRadius: 2, backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, px: 2, py: 1, borderRadius: 2, backgroundColor: C.amberLight, border: `1px solid ${C.amberMid}` }}>
                   <SkipNextIcon sx={{ color: C.amber, fontSize: 18 }} />
                   <Box><Typography sx={{ fontSize: 18, fontWeight: 800, color: C.amber, lineHeight: 1 }}>{result.failed || 0}</Typography><Typography sx={{ fontSize: 10, color: C.amber, fontWeight: 600 }}>FAILED</Typography></Box>
                 </Box>
                 {result.errors?.length > 0 && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, px: 2, py: 1, borderRadius: 2, backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
-                    <ErrorOutlineIcon sx={{ color: "#dc2626", fontSize: 18 }} />
-                    <Box><Typography sx={{ fontSize: 18, fontWeight: 800, color: "#dc2626", lineHeight: 1 }}>{result.errors.length}</Typography><Typography sx={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>ISSUES</Typography></Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, px: 2, py: 1, borderRadius: 2, backgroundColor: C.redLight, border: `1px solid ${C.redLight}` }}>
+                    <ErrorOutlineIcon sx={{ color: C.red, fontSize: 18 }} />
+                    <Box><Typography sx={{ fontSize: 18, fontWeight: 800, color: C.red, lineHeight: 1 }}>{result.errors.length}</Typography><Typography sx={{ fontSize: 10, color: C.red, fontWeight: 600 }}>ISSUES</Typography></Box>
                   </Box>
                 )}
               </Box>
@@ -326,7 +326,7 @@ export default function ImportExportBar({
                     <List dense disablePadding>
                       {result.errors.map((msg, i) => (
                         <ListItem key={i} divider={i < result.errors.length - 1} sx={{ py: 0.8, px: 2 }}>
-                          <ListItemIcon sx={{ minWidth: 28 }}><ErrorOutlineIcon sx={{ fontSize: 15, color: "#dc2626" }} /></ListItemIcon>
+                          <ListItemIcon sx={{ minWidth: 28 }}><ErrorOutlineIcon sx={{ fontSize: 15, color: C.red }} /></ListItemIcon>
                           <ListItemText primary={msg} primaryTypographyProps={{ fontSize: 12, color: C.navy, fontWeight: 500 }} />
                         </ListItem>
                       ))}
@@ -335,7 +335,7 @@ export default function ImportExportBar({
                 </>
               )}
               {result.imported > 0 && result.errors?.length === 0 && (
-                <Box sx={{ p: 2, borderRadius: 2, backgroundColor: "#ecfdf5", border: "1px solid #bbf7d0", textAlign: "center" }}>
+                <Box sx={{ p: 2, borderRadius: 2, backgroundColor: C.emeraldLight, border: `1px solid ${C.emeraldMid}`, textAlign: "center" }}>
                   <Typography sx={{ color: C.emerald, fontWeight: 700, fontSize: 13 }}>✓ All rows imported successfully!</Typography>
                 </Box>
               )}

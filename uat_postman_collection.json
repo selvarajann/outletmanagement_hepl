@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "OMS UAT Webhooks & APIs",
+    "description": "Collection for executing OMS-IMS Enterprise Integration UAT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. IMS Webhooks",
+      "item": [
+        {
+          "name": "Product Sync (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Webhook-Secret", "value": "oms-webhook-secret-2025" }
+            ],
+            "url": { "raw": "http://localhost:8080/api/webhook/ims/product-sync", "host": ["localhost"], "port": "8080", "path": ["api", "webhook", "ims", "product-sync"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"P-UAT-100\",\n  \"name\": \"UAT Test Product\",\n  \"uimPrice\": 500.0,\n  \"mrp\": 600.0,\n  \"sellingPrice\": 550.0,\n  \"purchasePrice\": 400.0,\n  \"status\": \"ACTIVE\",\n  \"divisionName\": \"PHARMA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Batch Sync (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Webhook-Secret", "value": "oms-webhook-secret-2025" }
+            ],
+            "url": { "raw": "http://localhost:8080/api/webhook/ims/batch-sync", "host": ["localhost"], "port": "8080", "path": ["api", "webhook", "ims", "batch-sync"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchCode\": \"B-UAT-100-A\",\n  \"productCode\": \"P-UAT-100\",\n  \"mfgDate\": \"2023-01-01\",\n  \"expiryDate\": \"2026-12-31\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Stock Order Status (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Webhook-Secret", "value": "oms-webhook-secret-2025" }
+            ],
+            "url": { "raw": "http://localhost:8080/api/webhook/ims/stock-order-status", "host": ["localhost"], "port": "8080", "path": ["api", "webhook", "ims", "stock-order-status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderCode\": \"SO-REPLACE-ME\",\n  \"status\": \"APPROVED\",\n  \"remarks\": \"IMS automated approval.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Dispatch Sync (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Webhook-Secret", "value": "oms-webhook-secret-2025" }
+            ],
+            "url": { "raw": "http://localhost:8080/api/webhook/ims/dispatch", "host": ["localhost"], "port": "8080", "path": ["api", "webhook", "ims", "dispatch"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imsReferenceCode\": \"DISP-001\",\n  \"orderCode\": \"SO-REPLACE-ME\",\n  \"dispatchDate\": \"2024-05-10\",\n  \"items\": [\n    {\n      \"productCode\": \"P-UAT-100\",\n      \"quantityDispatched\": 50,\n      \"mfgDate\": \"2023-01-01\",\n      \"expiryDate\": \"2026-12-31\"\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. OMS Admin APIs",
+      "item": [
+        {
+          "name": "Trigger Reconciliation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "http://localhost:8080/api/reconciliation/trigger", "host": ["localhost"], "port": "8080", "path": ["api", "reconciliation", "trigger"] }
+          }
+        },
+        {
+          "name": "Retry Dead Letter",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "http://localhost:8080/api/sync/dead-letters/stock-request/1/retry", "host": ["localhost"], "port": "8080", "path": ["api", "sync", "dead-letters", "stock-request", "1", "retry"] }
+          }
+        }
+      ]
+    }
+  ]
+}

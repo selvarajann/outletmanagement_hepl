@@ -136,7 +136,7 @@ export default function BatchReceiveDialog({ open, batch, dateMap, setDateMap, o
           size="small"
           disabled={submitting}
           startIcon={<CheckCircleIcon sx={{ fontSize: 15 }} />}
-          sx={{ textTransform: "none", borderRadius: 2, backgroundColor: C.emerald, "&:hover": { backgroundColor: "#047857" } }}>
+          sx={{ textTransform: "none", borderRadius: 2, backgroundColor: C.emerald, "&:hover": { backgroundColor: C.emerald } }}>
           {submitting ? "Saving..." : "Confirm Receipt & Update Stock"}
         </Button>
       </DialogActions>

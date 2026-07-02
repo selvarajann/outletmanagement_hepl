@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "batch_items",
@@ -41,6 +42,8 @@ public class BatchItem {
     @Column(nullable = false)
     private Integer remainingQuantity;
 
+    private String imsBatchCode;
+
     /** Manufacturing date — stored per-batch for traceability. */
     private LocalDate mfgDate;
 
@@ -51,6 +54,13 @@ public class BatchItem {
     private BigDecimal purchasePrice;
     private BigDecimal mrp;
     private BigDecimal uimPrice;
+
+    @Column(nullable = false)
+    private boolean isQuarantined = false;
+
+    private String quarantineReason;
+    private String quarantineReviewedBy;
+    private LocalDateTime quarantineReviewedAt;
 
     @jakarta.persistence.Version
     private Long version;

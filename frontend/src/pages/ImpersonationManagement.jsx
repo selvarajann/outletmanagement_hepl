@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
+import { C } from "../theme/colors";
 import {
   Box,
   Typography,
@@ -8,7 +9,6 @@ import {
   CircularProgress,
   Chip,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import StopIcon from "@mui/icons-material/Stop";
 import SearchIcon from "@mui/icons-material/Search";
@@ -18,6 +18,9 @@ import impersonationService from "../services/impersonationService";
 import axiosInstance from "../config/axiosInstance";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import EnterpriseTable from "../components/shared/EnterpriseTable";
+import TablePagination from "../components/shared/TablePagination";
+import PageHeader from "../components/shared/PageHeader";
 
 const ImpersonationManagement = () => {
   const { startImpersonation } = useContext(AuthContext);
@@ -30,6 +33,8 @@ const ImpersonationManagement = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [userPage, setUserPage] = useState(0);
+  const [historyPage, setHistoryPage] = useState(0);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -91,31 +96,28 @@ const ImpersonationManagement = () => {
   };
 
   const userColumns = [
-    { field: "username", headerName: "Username", flex: 1 },
-    { field: "role", headerName: "Role", flex: 1 },
+    { key: "username", label: "Username" },
+    { key: "role", label: "Role" },
     {
-      field: "active",
-      headerName: "Status",
-      flex: 1,
-      renderCell: (params) => (
+      label: "Status",
+      render: (row) => (
         <Chip
-          label={params.value ? "Active" : "Inactive"}
-          color={params.value ? "success" : "error"}
+          label={row.active ? "Active" : "Inactive"}
+          color={row.active ? "success" : "error"}
           size="small"
         />
       ),
     },
     {
-      field: "actions",
-      headerName: "Action",
-      width: 150,
-      renderCell: (params) => (
+      label: "Action",
+      align: "right",
+      render: (row) => (
         <Button
           variant="contained"
           size="small"
           startIcon={<SupervisorAccountIcon />}
-          onClick={() => handleStartImpersonation(params.row.id)}
-          disabled={!params.row.active}
+          onClick={() => handleStartImpersonation(row.id)}
+          disabled={!row.active}
         >
           Impersonate
         </Button>
@@ -124,23 +126,19 @@ const ImpersonationManagement = () => {
   ];
 
   const sessionColumns = [
-    { field: "adminUsername", headerName: "Admin", flex: 1 },
-    { field: "targetUsername", headerName: "Target", flex: 1 },
-    { field: "targetRole", headerName: "Role", flex: 1 },
+    { key: "adminUsername", label: "Admin" },
+    { key: "targetUsername", label: "Target" },
+    { key: "targetRole", label: "Role" },
     {
-      field: "startedAt",
-      headerName: "Started At",
-      flex: 1,
-      valueGetter: (params) => new Date(params.row.startedAt).toLocaleString(),
+      label: "Started At",
+      render: (row) => new Date(row.startedAt).toLocaleString(),
     },
     {
-      field: "endedAt",
-      headerName: "Ended At",
-      flex: 1,
-      valueGetter: (params) =>
-        params.row.endedAt ? new Date(params.row.endedAt).toLocaleString() : "-",
+      label: "Ended At",
+      render: (row) =>
+        row.endedAt ? new Date(row.endedAt).toLocaleString() : "-",
     },
-    { field: "endReason", headerName: "Reason", flex: 1 },
+    { key: "endReason", label: "Reason" },
   ];
 
   const filteredUsers = users.filter((u) => {
@@ -149,15 +147,19 @@ const ImpersonationManagement = () => {
     return matchesSearch && matchesRole;
   });
 
+  const paginatedUsers = filteredUsers.slice(userPage * 5, (userPage + 1) * 5);
+  const totalUserPages = Math.ceil(filteredUsers.length / 5);
+
+  const paginatedHistory = history.slice(historyPage * 5, (historyPage + 1) * 5);
+  const totalHistoryPages = Math.ceil(history.length / 5);
+
   return (
-    <Box>
-      <Typography variant="h5" fontWeight="bold" mb={3} color="primary">
-        Impersonation Management
-      </Typography>
+    <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
+      <PageHeader title="Impersonation Management" subtitle="Manage and monitor impersonation sessions" />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+          <Paper elevation={0} sx={{ p: 2.5, display: "flex", flexDirection: "column", bgcolor: C.white, border: `1px solid ${C.border}`, borderRadius: "14px" }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">Impersonable Users</Typography>
             </Box>
@@ -192,23 +194,27 @@ const ImpersonationManagement = () => {
             </Box>
 
             <Box sx={{ flexGrow: 1, width: "100%" }}>
-              <DataGrid
-                rows={filteredUsers}
-                columns={userColumns}
-                loading={loadingUsers}
-                pageSizeOptions={[5, 10, 25]}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 5 } },
-                }}
-                disableRowSelectionOnClick
-                autoHeight
-              />
+              {loadingUsers ? (
+                <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
+              ) : (
+                <>
+                  <EnterpriseTable
+                    data={paginatedUsers}
+                    columns={userColumns}
+                  />
+                  <TablePagination
+                    page={userPage}
+                    totalPages={totalUserPages}
+                    onPageChange={setUserPage}
+                  />
+                </>
+              )}
             </Box>
           </Paper>
         </Grid>
 
         <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+          <Paper elevation={0} sx={{ p: 2.5, display: "flex", flexDirection: "column", bgcolor: C.white, border: `1px solid ${C.border}`, borderRadius: "14px" }}>
             <Typography variant="h6" mb={2}>
               Live Sessions
             </Typography>
@@ -222,7 +228,7 @@ const ImpersonationManagement = () => {
                   <Paper
                     key={session.id}
                     variant="outlined"
-                    sx={{ p: 2, mb: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                    sx={{ p: 2, mb: 1, display: "flex", justifyContent: "space-between", alignItems: "center", borderColor: C.border, borderRadius: "10px" }}
                   >
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
@@ -249,25 +255,26 @@ const ImpersonationManagement = () => {
         </Grid>
 
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: "flex", flexDirection: "column" }}>
+          <Paper elevation={0} sx={{ p: 2.5, display: "flex", flexDirection: "column", bgcolor: C.white, border: `1px solid ${C.border}`, borderRadius: "14px" }}>
             <Typography variant="h6" mb={2}>
               Session History
             </Typography>
             <Box sx={{ flexGrow: 1, width: "100%" }}>
-              <DataGrid
-                rows={history}
-                columns={sessionColumns}
-                loading={loadingHistory}
-                pageSizeOptions={[5, 10, 25]}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 5 } },
-                  sorting: {
-                    sortModel: [{ field: "startedAt", sort: "desc" }],
-                  },
-                }}
-                disableRowSelectionOnClick
-                autoHeight
-              />
+              {loadingHistory ? (
+                <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
+              ) : (
+                <>
+                  <EnterpriseTable
+                    data={paginatedHistory}
+                    columns={sessionColumns}
+                  />
+                  <TablePagination
+                    page={historyPage}
+                    totalPages={totalHistoryPages}
+                    onPageChange={setHistoryPage}
+                  />
+                </>
+              )}
             </Box>
           </Paper>
         </Grid>

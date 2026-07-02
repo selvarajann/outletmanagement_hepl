@@ -75,9 +75,9 @@ export default function BatchItemsDialog({ open, onClose, batch, loading }) {
               </TableBody>
             </Table>
             <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-              <Box sx={{ p: 1.5, backgroundColor: "#f0fdfa", borderRadius: 2, border: "1px solid #ccfbf1", minWidth: 180, textAlign: "right" }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#0f766e" }}>TOTAL BATCH VALUE</Typography>
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#0f766e" }}>₹{totalValue.toLocaleString()}</Typography>
+              <Box sx={{ p: 1.5, backgroundColor: C.tealLight, borderRadius: 2, border: "1px solid #ccfbf1", minWidth: 180, textAlign: "right" }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: C.teal }}>TOTAL BATCH VALUE</Typography>
+                <Typography sx={{ fontSize: 18, fontWeight: 800, color: C.teal }}>₹{totalValue.toLocaleString()}</Typography>
               </Box>
               <Box sx={{ p: 1.5, backgroundColor: "#f0fdf4", borderRadius: 2, border: "1px solid #dcfce7", minWidth: 180, textAlign: "right" }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>TOTAL PROFIT</Typography>

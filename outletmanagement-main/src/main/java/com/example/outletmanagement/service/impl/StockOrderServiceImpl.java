@@ -46,6 +46,7 @@ public class StockOrderServiceImpl implements StockOrderService {
     private final StockOrderItemRepository stockOrderItemRepository;
     private final OutletRepository outletRepository;
     private final ProductRepository productRepository;
+    private final com.example.outletmanagement.repository.OutletDivisionProductRepository outletDivisionProductRepository;
     private final BatchService batchService;
     private final NotificationService notificationService;
     private final InventoryApiClient inventoryApiClient;
@@ -62,7 +63,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         order.setOrderCode("SO-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + seq);
         order.setOutlet(outlet);
         order.setRequestedDate(request.getRequestedDate());
-        order.setStatus("PENDING");
+        order.setStatus("PENDING_IMS");
         order.setNotes(request.getNotes());
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
@@ -84,6 +85,23 @@ public class StockOrderServiceImpl implements StockOrderService {
             return item;
         }).collect(Collectors.toList());
 
+        // Validate against IMS warehouse (non-blocking if IMS is down)
+        String outletCode = outlet.getOutletCode();
+        if (outletCode != null && !outletCode.isEmpty()) {
+            Map<String, Integer> imsAvailability = inventoryApiClient.fetchWarehouseAvailabilityMap(outletCode);
+            if (!imsAvailability.isEmpty()) {
+                for (StockOrderItem item : items) {
+                    String productCode = item.getProduct().getProductCode();
+                    int available = imsAvailability.getOrDefault(productCode, 0);
+                    if (available < item.getQuantityRequested()) {
+                        throw new IllegalArgumentException(
+                            "Product " + productCode + " requested " + item.getQuantityRequested()
+                            + " but only " + available + " available in IMS warehouse.");
+                    }
+                }
+            }
+        }
+
         order.setItems(items);
         StockOrder saved = stockOrderRepository.save(order);
         
@@ -97,8 +115,15 @@ public class StockOrderServiceImpl implements StockOrderService {
         notificationService.sendToRole("SUPER_ADMIN", NotificationType.STOCK_ORDER_CREATED, "New Stock Order", msg);
         notificationService.sendToRole("INVENTORY_MANAGER", NotificationType.STOCK_ORDER_CREATED, "New Stock Order", msg);
 
-        // Async: push to Inventory Management System (non-blocking)
-        inventoryApiClient.pushStockRequest(saved.getId());
+        // Async: push to Inventory Management System (non-blocking) ONLY AFTER COMMIT!
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    inventoryApiClient.pushStockRequest(saved.getId());
+                }
+            }
+        );
 
         // ── Mailtrap Email ──────────────────────────────────────────────────
         BigDecimal totalAmount = saved.getItems().stream()
@@ -147,8 +172,8 @@ public class StockOrderServiceImpl implements StockOrderService {
     public StockOrderResponse updateOrder(Long id, StockOrderRequest request) {
         StockOrder order = stockOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING".equals(order.getStatus())) {
-            throw new RuntimeException("Can only update PENDING orders");
+        if (!"PENDING_IMS".equals(order.getStatus())) {
+            throw new RuntimeException("Can only update PENDING_IMS orders");
         }
 
         Outlet outlet = outletRepository.findById(request.getOutletId())
@@ -187,54 +212,25 @@ public class StockOrderServiceImpl implements StockOrderService {
 
     @Override
     @Transactional
-    public StockOrderResponse approveOrder(Long id) {
-        StockOrder order = stockOrderRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING".equals(order.getStatus())) {
-            throw new RuntimeException("Only PENDING orders can be approved");
-        }
-        order.setStatus("APPROVED");
-        order.setUpdatedAt(LocalDateTime.now());
-        // NOTE: Batch is NOT auto-created here.
-        // The outlet admin creates the batch manually via POST /api/batches
-        // when goods physically arrive from the Inventory Management System.
-        StockOrder saved = stockOrderRepository.save(order);
-
-        // Notify the user who created the order
-        String orderOwner = saved.getCreatedBy();
-        if (orderOwner != null && !orderOwner.isEmpty()) {
-            String msg = String.format("Your stock order #%d has been approved. Goods will be dispatched by the Inventory Management System.", saved.getId());
-            notificationService.sendToUser(orderOwner,
-                    NotificationType.STOCK_ORDER_APPROVED, "Order Approved", msg);
-
-            // ── Mailtrap Email ──────────────────────────────────────────────────
-            // Note: orderOwner is a username; adapt if email lookup is needed
-            emailService.sendStockOrderApprovedEmail(
-                    orderOwner, saved.getId(), saved.getOrderCode(),
-                    saved.getOutlet().getOutletName());
-        }
-
-        return mapToResponse(saved);
-    }
-
-    @Override
-    @Transactional
-    public StockOrderResponse cancelOrder(Long id) {
+    public StockOrderResponse requestCancelOrder(Long id) {
         StockOrder order = stockOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING".equals(order.getStatus())) {
-            throw new RuntimeException("Only PENDING orders can be cancelled");
+        if (!"PENDING_IMS".equals(order.getStatus())) {
+            throw new RuntimeException("Only PENDING_IMS orders can be requested for cancellation");
         }
-        order.setStatus("CANCELLED");
+        order.setStatus("CANCEL_REQUESTED");
         order.setUpdatedAt(LocalDateTime.now());
         StockOrder saved = stockOrderRepository.save(order);
+
+        // Call IMS to request cancel
+        inventoryApiClient.pushCancelRequest(saved.getId());
 
         // Notify the user who created the order
         String orderOwner = saved.getCreatedBy();
         if (orderOwner != null && !orderOwner.isEmpty()) {
-            String msg = String.format("Your stock order #%d has been cancelled.", saved.getId());
+            String msg = String.format("Cancellation requested for stock order #%d.", saved.getId());
             notificationService.sendToUser(orderOwner,
-                    NotificationType.STOCK_ORDER_CANCELLED, "Order Cancelled", msg);
+                    NotificationType.STOCK_ORDER_CANCELLED, "Cancellation Requested", msg);
 
             // ── Mailtrap Email ──────────────────────────────────────────────────
             emailService.sendStockOrderCancelledEmail(
@@ -250,8 +246,8 @@ public class StockOrderServiceImpl implements StockOrderService {
     public void deleteOrder(Long id) {
         StockOrder order = stockOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING".equals(order.getStatus())) {
-            throw new RuntimeException("Only PENDING orders can be deleted");
+        if (!"PENDING_IMS".equals(order.getStatus())) {
+            throw new RuntimeException("Only PENDING_IMS orders can be deleted");
         }
         stockOrderRepository.delete(order);
     }
@@ -309,5 +305,77 @@ public class StockOrderServiceImpl implements StockOrderService {
         response.setTotalAmount(totalAmount);
 
         return response;
+    }
+
+    @Override
+    public com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse getWarehouseProducts(Long outletId) {
+        try {
+            Outlet outlet = outletRepository.findById(outletId)
+                    .orElseThrow(() -> new RuntimeException("Outlet not found"));
+
+            String outletCode = outlet.getOutletCode();
+            if (outletCode == null || outletCode.isEmpty()) {
+                outletCode = "";
+            }
+
+            List<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto> productDtos = 
+                    inventoryApiClient.fetchFullWarehouseProducts(outletCode);
+
+            // JIT Sync: Ensure IMS products exist in local DB and return local IDs
+            List<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto> syncedDtos = new java.util.ArrayList<>();
+            java.util.Set<Long> seenIds = new java.util.HashSet<>();
+            for (var dto : productDtos) {
+                if (dto.getProductCode() == null || dto.getProductCode().isEmpty()) continue;
+                
+                com.example.outletmanagement.model.entity.Products localP = productRepository.findByProductCode(dto.getProductCode()).orElse(null);
+                if (localP == null) {
+                    localP = new com.example.outletmanagement.model.entity.Products();
+                    localP.setProductCode(dto.getProductCode());
+                    localP.setName(dto.getName() != null && !dto.getName().isEmpty() ? dto.getName() : dto.getProductCode());
+                    localP.setUimPrice(dto.getSellingPrice());
+                    localP.setMrp(dto.getSellingPrice());
+                    localP.setSellingPrice(dto.getSellingPrice());
+                    localP.setPurchasePrice(dto.getSellingPrice());
+                    localP.setStatus(com.example.outletmanagement.model.enums.ProductStatus.ACTIVE);
+                    localP = productRepository.save(localP);
+                } else {
+                    boolean changed = false;
+                    String newName = dto.getName() != null && !dto.getName().isEmpty() ? dto.getName() : dto.getProductCode();
+                    if (!localP.getName().equals(newName)) { localP.setName(newName); changed = true; }
+                    if (localP.getSellingPrice().compareTo(dto.getSellingPrice()) != 0) { 
+                        localP.setSellingPrice(dto.getSellingPrice()); 
+                        localP.setUimPrice(dto.getSellingPrice());
+                        localP.setMrp(dto.getSellingPrice());
+                        localP.setPurchasePrice(dto.getSellingPrice());
+                        changed = true; 
+                    }
+                    if (changed) localP = productRepository.save(localP);
+                }
+                
+                // CRITICAL: Return the LOCAL ID so createOrder() can find it!
+                dto.setId(localP.getId()); 
+                if (seenIds.add(localP.getId())) {
+                    syncedDtos.add(dto);
+                }
+            }
+
+            boolean imsAvailable = !syncedDtos.isEmpty();
+            return new com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse(imsAvailable, syncedDtos);
+        } catch (Exception ex) {
+            try {
+                java.io.StringWriter sw = new java.io.StringWriter();
+                ex.printStackTrace(new java.io.PrintWriter(sw));
+                java.nio.file.Files.writeString(
+                    java.nio.file.Paths.get("debug_error.txt"), 
+                    sw.toString(), 
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+            } catch (Exception ignore) {}
+            throw new RuntimeException("Debug wrapped: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public void syncOrdersFromIms() {
+        // TODO: Implement external sync
     }
 }

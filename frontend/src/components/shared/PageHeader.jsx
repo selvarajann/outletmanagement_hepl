@@ -10,7 +10,7 @@ export default memo(function PageHeader({ title, subtitle, onAdd, addLabel }) {
       <Box
         sx={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          bgcolor: "#fff", border: `1px solid ${C.border}`,
+          bgcolor: C.white, border: `1px solid ${C.border}`,
           borderRadius: "14px", p: 2.5, pl: 0,
           boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
           overflow: "hidden", position: "relative",

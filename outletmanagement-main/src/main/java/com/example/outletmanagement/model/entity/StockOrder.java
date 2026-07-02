@@ -49,9 +49,12 @@ public class StockOrder {
 
     /**
      * Tracks the async push status to the Inventory Management System.
-     * Values: PENDING / IMS_PUSHED / IMS_PUSH_FAILED
+     * Values: PENDING / IMS_PUSHED / IMS_PUSH_FAILED / DEAD_LETTER
      */
     private String imsPushStatus = "PENDING";
+
+    /** Phase 12: Retry counter for failed IMS pushes. Dead-letter at 5. */
+    private Integer imsPushRetryCount = 0;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -15,52 +15,7 @@ import {
   PersonAdd as PersonAddIcon,
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { C } from "../theme/colors";
-
-// ── Match Login's premium light theme exactly ────────────────────────────────
-const registerTheme = createTheme({
-  palette: {
-    mode: "light",
-    primary: { main: C.blue },
-    background: { default: C.bg, paper: C.white },
-    text: { primary: C.navy, secondary: C.slateMid },
-  },
-  typography: { fontFamily: "'Inter', 'Segoe UI', sans-serif" },
-  shape: { borderRadius: 14 },
-  components: {
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 12,
-            backgroundColor: C.white,
-            transition: "all 0.2s",
-            boxShadow: "0 1px 2px rgba(15,23,42,0.03)",
-            "& fieldset": { borderColor: C.border },
-            "&:hover fieldset": { borderColor: "#cbd5e1" },
-            "&.Mui-focused fieldset": { borderColor: C.blue, borderWidth: 2 },
-            "&.Mui-focused": { boxShadow: "0 4px 12px rgba(37,99,235,0.08)" },
-          },
-          "& .MuiInputLabel-root": { color: C.slateMid, fontSize: "14px", fontWeight: 500 },
-          "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
-          "& .MuiInputBase-input": { color: C.navy, fontSize: "14px", fontWeight: 500 },
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          textTransform: "none",
-          fontWeight: 700,
-          fontSize: "14px",
-          letterSpacing: 0.3,
-        },
-      },
-    },
-  },
-});
 
 const blobs = [
   { size: 500, top: "-15%", left: "-10%", color: "rgba(37,99,235,0.06)", delay: "0s" },
@@ -158,7 +113,6 @@ const Register = () => {
   };
 
   return (
-    <ThemeProvider theme={registerTheme}>
       <Box
         sx={{
           minHeight: "100vh",
@@ -226,7 +180,22 @@ const Register = () => {
               Join the Outlet Management platform
             </Typography>
 
-            <Box component="form" sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }} noValidate>
+            <Box component="form" sx={{ 
+              width: "100%", display: "flex", flexDirection: "column", gap: 2,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "12px",
+                backgroundColor: C.white,
+                transition: "all 0.2s",
+                boxShadow: "0 1px 2px rgba(15,23,42,0.03)",
+                "& fieldset": { borderColor: C.border },
+                "&:hover fieldset": { borderColor: "var(--color-slateMid)" },
+                "&.Mui-focused fieldset": { borderColor: C.blue, borderWidth: "2px" },
+                "&.Mui-focused": { boxShadow: "0 4px 12px rgba(37,99,235,0.08)" },
+              },
+              "& .MuiInputLabel-root": { color: C.slateMid, fontSize: "14px", fontWeight: 500 },
+              "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
+              "& .MuiInputBase-input": { color: C.navy, fontSize: "14px", fontWeight: 500 },
+            }} noValidate>
               {FIELDS.map(({ name, label, type: baseType, autoComplete, Icon }) => {
                 const isPasswordField = name === "password" || name === "confirm";
                 const shown = showPwd[name];
@@ -277,11 +246,13 @@ const Register = () => {
                 disabled={loading}
                 startIcon={!loading && <PersonAddIcon sx={{ fontSize: "16px !important" }} />}
                 sx={{
+                  borderRadius: "12px", textTransform: "none", fontWeight: 700, fontSize: "14px", letterSpacing: 0.3,
                   mt: 1, py: 1.5,
-                  background: C.navy, color: C.white,
+                  background: C.navy, color: C.bg,
                   boxShadow: "0 4px 12px rgba(15,23,42,0.15)",
                   "&:hover": {
-                    background: "#1e293b",
+                    background: "var(--color-navy)",
+                    opacity: 0.9,
                     boxShadow: "0 6px 16px rgba(15,23,42,0.25)",
                   },
                   "&.Mui-disabled": { background: C.border, color: C.muted },
@@ -309,7 +280,6 @@ const Register = () => {
           </Box>
         </Paper>
       </Box>
-    </ThemeProvider>
   );
 };
 

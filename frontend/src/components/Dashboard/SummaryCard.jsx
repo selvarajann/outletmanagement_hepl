@@ -1,4 +1,4 @@
-import { Paper, Typography, Box, Avatar, Divider, Button, Chip } from "@mui/material";
+import { Card, Typography, Box, Avatar, Divider, Button, Chip } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useNavigate } from "react-router-dom";
 import { C } from "../../theme/colors";
@@ -7,13 +7,12 @@ const SummaryCard = ({ title, icon, iconColor, items = [], path, renderItem }) =
   const navigate = useNavigate();
 
   return (
-    <Paper
-      elevation={0}
+    <Card
       sx={{
         borderRadius: "14px",
         border: `1px solid ${C.border}`,
         overflow: "hidden",
-        bgcolor: "#fff",
+        bgcolor: C.white,
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -37,7 +36,7 @@ const SummaryCard = ({ title, icon, iconColor, items = [], path, renderItem }) =
           <Box
             sx={{
               width: 30, height: 30, borderRadius: "8px", flexShrink: 0,
-              bgcolor: `${iconColor}18`,
+              bgcolor: `color-mix(in srgb, ${iconColor} 18%, transparent)`,
               display: "flex", alignItems: "center", justifyContent: "center",
               "& svg": { fontSize: "15px !important", color: `${iconColor} !important` },
             }}
@@ -53,10 +52,10 @@ const SummaryCard = ({ title, icon, iconColor, items = [], path, renderItem }) =
           size="small"
           sx={{
             height: 20, minWidth: 28,
-            bgcolor: `${iconColor}12`,
+            bgcolor: `color-mix(in srgb, ${iconColor} 12%, transparent)`,
             color: iconColor,
             fontWeight: 700, fontSize: "11px",
-            border: `1px solid ${iconColor}20`,
+            border: `1px solid color-mix(in srgb, ${iconColor} 20%, transparent)`,
             borderRadius: "6px",
           }}
         />
@@ -81,7 +80,7 @@ const SummaryCard = ({ title, icon, iconColor, items = [], path, renderItem }) =
                     content: '""',
                     position: "absolute",
                     left: 10, top: 0, bottom: 0, width: 2,
-                    bgcolor: i === 0 ? iconColor : `${iconColor}30`,
+                    bgcolor: i === 0 ? iconColor : `color-mix(in srgb, ${iconColor} 30%, transparent)`,
                     borderRadius: "1px",
                   },
                   "&::after": {
@@ -89,9 +88,9 @@ const SummaryCard = ({ title, icon, iconColor, items = [], path, renderItem }) =
                     position: "absolute",
                     left: 7, top: "50%", transform: "translateY(-50%)",
                     width: 8, height: 8, borderRadius: "50%",
-                    bgcolor: i === 0 ? iconColor : `${iconColor}50`,
-                    border: "2px solid #fff",
-                    boxShadow: i === 0 ? `0 0 6px ${iconColor}50` : "none",
+                    bgcolor: i === 0 ? iconColor : `color-mix(in srgb, ${iconColor} 50%, transparent)`,
+                    border: `2px solid ${C.white}`,
+                    boxShadow: i === 0 ? `0 0 6px color-mix(in srgb, ${iconColor} 50%, transparent)` : "none",
                   },
                 }}
               >
@@ -123,7 +122,7 @@ const SummaryCard = ({ title, icon, iconColor, items = [], path, renderItem }) =
           View All
         </Button>
       </Box>
-    </Paper>
+    </Card>
   );
 };
 

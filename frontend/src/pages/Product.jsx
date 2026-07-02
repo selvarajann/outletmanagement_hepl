@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import ProductTable from "../components/Products/ProductTable";
 import ProductForm from "../components/Products/ProductForm";
 import ProductFilter from "../components/Products/ProductFilter";
-import ProductPagination from "../components/Products/ProductPagination";
+import TablePagination from "../components/shared/TablePagination";
 import PageHeader from "../components/shared/PageHeader";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import ImportExportBar from "../components/shared/ImportExportBar";
@@ -145,14 +145,14 @@ export default function Product() {
   const totalPurchase = products.reduce((s, p) => s + (p.purchasePrice || 0), 0);
 
   const cards = [
-    { title: "Total Products", value: loading ? "—" : products.length, icon: <Inventory2Icon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Total Selling Value", value: loading ? "—" : fmt(totalSelling), icon: <TrendingUpIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
-    { title: "Total Purchase Cost", value: loading ? "—" : fmt(totalPurchase), icon: <AccountBalanceWalletIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.amber, bgColor: C.amber },
-    { title: "Gross Profit", value: loading ? "—" : fmt(totalSelling - totalPurchase), icon: <ShowChartIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.emerald, bgColor: C.emerald },
+    { title: "Total Products",       value: loading ? "—" : products.length,              icon: <Inventory2Icon          />, color: C.blue    },
+    { title: "Total Selling Value",  value: loading ? "—" : fmt(totalSelling),            icon: <TrendingUpIcon          />, color: C.teal    },
+    { title: "Total Purchase Cost",  value: loading ? "—" : fmt(totalPurchase),           icon: <AccountBalanceWalletIcon/>, color: C.amber   },
+    { title: "Gross Profit",         value: loading ? "—" : fmt(totalSelling - totalPurchase), icon: <ShowChartIcon      />, color: C.emerald },
   ];
 
   return (
-    <Box sx={{ backgroundColor: C.surface, minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
       <PageHeader title="Products" subtitle="Manage your product catalog" onAdd={() => handleOpen()} addLabel="Add Product" />
       <ImportExportBar
         entity="Products"
@@ -196,7 +196,7 @@ export default function Product() {
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
       {!loading && <ProductTable products={products} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onImageUpload={handleImageUpload} />}
-      <ProductPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <ProductForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} loading={mutation.isPending} />
 
       <ViewDialog open={!!viewItem} onClose={() => setViewItem(null)} title="Product Details">

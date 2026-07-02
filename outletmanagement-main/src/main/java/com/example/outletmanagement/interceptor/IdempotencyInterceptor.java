@@ -34,11 +34,20 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
 
                 String redisKey = REDIS_PREFIX + idempotencyKey;
                 
-                // setIfAbsent returns true if the key was set (i.e. it didn't exist before)
-                Boolean isNewKey = redisTemplate.opsForValue().setIfAbsent(redisKey, "processing", idempotent.ttlSeconds(), TimeUnit.SECONDS);
+                try {
+                    // setIfAbsent returns true if the key was set (i.e. it didn't exist before)
+                    Boolean isNewKey = redisTemplate.opsForValue().setIfAbsent(redisKey, "processing", idempotent.ttlSeconds(), TimeUnit.SECONDS);
 
-                if (Boolean.FALSE.equals(isNewKey)) {
-                    throw new IdempotencyException("Duplicate request detected. This request has already been processed.");
+                    if (Boolean.FALSE.equals(isNewKey)) {
+                        throw new IdempotencyException("Duplicate request detected. This request has already been processed.");
+                    }
+                } catch (org.springframework.data.redis.RedisConnectionFailureException e) {
+                    // Graceful degradation: If Redis is completely down, log warning and allow request
+                    System.err.println("WARNING: Unable to connect to Redis. Skipping idempotency check for key: " + idempotencyKey);
+                } catch (IdempotencyException e) {
+                    throw e; // Rethrow idempotency conflict
+                } catch (Exception e) {
+                    System.err.println("WARNING: Redis error during idempotency check: " + e.getMessage());
                 }
             }
         }

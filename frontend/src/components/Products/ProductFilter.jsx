@@ -5,16 +5,7 @@ import { useDivisions } from "../../hooks/useMasterData";
 import { C } from "../../theme/colors";
 import { useCallback } from "react";
 import DebouncedSearchInput from "../common/DebouncedSearchInput";
-
-const fieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 2, fontSize: 13, backgroundColor: C.white,
-    "& fieldset": { borderColor: C.border },
-    "&:hover fieldset": { borderColor: C.blue },
-    "&.Mui-focused fieldset": { borderColor: C.blue },
-  },
-  "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
-};
+import { filterFieldSx, filterWrapperSx } from "../../theme/styles";
 
 export default function ProductFilter({ filters, onChange, onSearch }) {
   const { divisions } = useDivisions();
@@ -31,7 +22,7 @@ export default function ProductFilter({ filters, onChange, onSearch }) {
   }, [filters, onChange]);
 
   return (
-    <Box sx={{ width: "100%", p: 2, backgroundColor: C.white, borderRadius: "14px" }}>
+    <Box sx={filterWrapperSx}>
       <Box display="flex" alignItems="center" gap={1} mb={1.5}>
         <FilterListIcon sx={{ fontSize: 16, color: C.slateMid }} />
         <Box component="span" sx={{ fontSize: "11px", fontWeight: 700, color: C.slateMid, textTransform: "uppercase", letterSpacing: 0.8 }}>Filters</Box>
@@ -50,9 +41,9 @@ export default function ProductFilter({ filters, onChange, onSearch }) {
           placeholder="Search by name or code..." 
           value={filters.keyword || ""}
           onSearch={(keyword, signal) => onSearch ? onSearch(keyword, signal) : handleChange("keyword", keyword)} 
-          sx={{ ...fieldSx, minWidth: 220 }} 
+          sx={{ ...filterFieldSx, minWidth: 220 }} 
         />
-        <FormControl size="small" sx={{ ...fieldSx, minWidth: 160 }}>
+        <FormControl size="small" sx={{ ...filterFieldSx, minWidth: 160 }}>
           <InputLabel>Division</InputLabel>
           <Select value={filters.divisionId} label="Division"
             onChange={(e) => handleChange("divisionId", e.target.value)}
@@ -63,16 +54,16 @@ export default function ProductFilter({ filters, onChange, onSearch }) {
         </FormControl>
         <TextField placeholder="Min Sell ₹" size="small" type="number" value={filters.minSellingPrice}
           onChange={(e) => handleChange("minSellingPrice", e.target.value)}
-          sx={{ ...fieldSx, width: 110 }} />
+          sx={{ ...filterFieldSx, width: 110 }} />
         <TextField placeholder="Max Sell ₹" size="small" type="number" value={filters.maxSellingPrice}
           onChange={(e) => handleChange("maxSellingPrice", e.target.value)}
-          sx={{ ...fieldSx, width: 110 }} />
+          sx={{ ...filterFieldSx, width: 110 }} />
         <TextField placeholder="Min Cost ₹" size="small" type="number" value={filters.minPurchasePrice}
           onChange={(e) => handleChange("minPurchasePrice", e.target.value)}
-          sx={{ ...fieldSx, width: 110 }} />
+          sx={{ ...filterFieldSx, width: 110 }} />
         <TextField placeholder="Max Cost ₹" size="small" type="number" value={filters.maxPurchasePrice}
           onChange={(e) => handleChange("maxPurchasePrice", e.target.value)}
-          sx={{ ...fieldSx, width: 110 }} />
+          sx={{ ...filterFieldSx, width: 110 }} />
       </Box>
     </Box>
   );

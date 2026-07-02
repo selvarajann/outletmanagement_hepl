@@ -9,6 +9,7 @@ import { useOutlets } from "../hooks/useMasterData";
 import { GetStockByOutlet } from "../services/StockService";
 import { ProcessSale } from "../services/SaleService";
 import { C } from "../theme/colors";
+import PageHeader from "../components/shared/PageHeader";
 
 const POSSales = () => {
   const { outlets } = useOutlets();
@@ -114,11 +115,11 @@ const POSSales = () => {
 
   return (
     <Box sx={{ height: "calc(100vh - 100px)", display: "flex", flexDirection: "column" }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Box>
-          <Typography variant="h5" fontWeight={800} color={C.navy}>Point of Sale</Typography>
-          <Typography variant="body2" color="textSecondary">Process sales with automatic FEFO stock deduction</Typography>
-        </Box>
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+        <PageHeader 
+          title="Point of Sale" 
+          subtitle="Process sales with automatic FEFO stock deduction" 
+        />
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ width: 250, bgcolor: "white", borderRadius: 1 }}>
             <InputLabel>Select Outlet</InputLabel>
@@ -271,7 +272,7 @@ const POSSales = () => {
                   borderRadius: 2, 
                   py: 1.5,
                   backgroundColor: C.emerald,
-                  "&:hover": { backgroundColor: "#047857" },
+                  "&:hover": { backgroundColor: C.emerald },
                   textTransform: "none",
                   fontWeight: 700,
                   fontSize: 16

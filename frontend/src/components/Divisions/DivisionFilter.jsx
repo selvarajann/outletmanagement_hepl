@@ -3,23 +3,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
 import { C } from "../../theme/colors";
-
-const fieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 2, fontSize: 13, backgroundColor: C.white,
-    "& fieldset": { borderColor: C.border },
-    "&:hover fieldset": { borderColor: C.blue },
-    "&.Mui-focused fieldset": { borderColor: C.blue },
-  },
-  "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
-};
+import { filterFieldSx, filterWrapperSx } from "../../theme/styles";
 
 export default function DivisionFilter({ filters, onChange }) {
   const activeCount = [filters.keyword, filters.hasProducts !== "" ? true : false].filter(Boolean).length;
   const handleReset = () => onChange({ keyword: "", hasProducts: "" });
 
   return (
-    <Box sx={{ width: "100%", p: 2, backgroundColor: C.white, borderRadius: "14px" }}>
+    <Box sx={filterWrapperSx}>
       <Box display="flex" alignItems="center" gap={1} mb={1.5}>
         <FilterListIcon sx={{ fontSize: 16, color: C.slateMid }} />
         <Box component="span" sx={{ fontSize: "11px", fontWeight: 700, color: C.slateMid, textTransform: "uppercase", letterSpacing: 0.8 }}>Filters</Box>
@@ -37,10 +28,10 @@ export default function DivisionFilter({ filters, onChange }) {
       <Box display="flex" flexWrap="wrap" gap={1.5}>
         <TextField placeholder="Search by division name..." size="small" value={filters.keyword}
           onChange={(e) => onChange({ ...filters, keyword: e.target.value })}
-          sx={{ ...fieldSx, minWidth: 240 }}
+          sx={{ ...filterFieldSx, minWidth: 240 }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: C.slateMid }} /></InputAdornment> }} />
         
-        <FormControl size="small" sx={{ ...fieldSx, minWidth: 170 }}>
+        <FormControl size="small" sx={{ ...filterFieldSx, minWidth: 170 }}>
           <InputLabel>Product Status</InputLabel>
           <Select value={filters.hasProducts} label="Product Status"
             onChange={(e) => onChange({ ...filters, hasProducts: e.target.value })}

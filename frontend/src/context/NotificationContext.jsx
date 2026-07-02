@@ -7,7 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
-  const { user, token } = useAuth();
+  const { user, role, token } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const stompClientRef = useRef(null);
@@ -46,17 +46,17 @@ export const NotificationProvider = ({ children }) => {
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       onConnect: () => {
-        console.log("WebSocket connected for user:", user.username);
+        console.log("WebSocket connected for user:", user);
         
         // 1. Subscribe to role-based notifications
-        if (user.role) {
-          client.subscribe(`/topic/role/${user.role}`, (message) => {
+        if (role) {
+          client.subscribe(`/topic/role/${role}`, (message) => {
             handleIncomingNotification(JSON.parse(message.body));
           });
         }
         
         // 2. Subscribe to user-specific notifications
-        client.subscribe(`/user/${user.username}/queue/notifications`, (message) => {
+        client.subscribe(`/user/${user}/queue/notifications`, (message) => {
           handleIncomingNotification(JSON.parse(message.body));
         });
       },
@@ -72,7 +72,7 @@ export const NotificationProvider = ({ children }) => {
     client.activate();
     stompClientRef.current = client;
 
-  }, [token, user]);
+  }, [token, user, role]);
 
   const disconnectWebSocket = useCallback(() => {
     if (stompClientRef.current) {

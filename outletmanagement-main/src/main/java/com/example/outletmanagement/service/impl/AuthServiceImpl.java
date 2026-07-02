@@ -6,12 +6,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.example.outletmanagement.model.entity.Login;
+import com.example.outletmanagement.model.entity.User;
 import com.example.outletmanagement.model.enums.NotificationType;
 import com.example.outletmanagement.payload.dto.AuthDto.AuthResponse;
 import com.example.outletmanagement.payload.dto.AuthDto.LoginRequest;
 import com.example.outletmanagement.payload.dto.AuthDto.RegisterRequest;
-import com.example.outletmanagement.repository.LoginRepository;
+import com.example.outletmanagement.repository.UserRepository;
 import com.example.outletmanagement.service.AuthService;
 import com.example.outletmanagement.service.EmailService;
 import com.example.outletmanagement.service.NotificationService;
@@ -27,7 +27,7 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    private final LoginRepository loginRepository;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final JwtUtil jwtUtil;
@@ -36,15 +36,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request) {
         
-        if (loginRepository.existsByUsername(request.getUsername())) {
+        if (userRepository.existsByUsername(request.getUsername())) {
             return new AuthResponse(null, null, null, null, "Username already exists");
         }
         
-        if (loginRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             return new AuthResponse(null, null, null, null, "Email already exists");
         }
 
-        Login login = new Login();
+        User login = new User();
         login.setUsername(request.getUsername());
         login.setPassword(passwordEncoder.encode(request.getPassword()));
         login.setEmail(request.getEmail());
@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
         }
         login.setCreatedAt(LocalDateTime.now());
 
-        loginRepository.save(login);
+        userRepository.save(login);
 
         String token = jwtUtil.generateToken(login.getUsername(), login.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(login.getUsername());
@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         
-        Login login = loginRepository.findByUsername(request.getUsername())
+        User login = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Invalid username or password"));
         log.debug("Login attempt for user: {}", login.getUsername());
 
@@ -105,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         login.setLastLogin(LocalDateTime.now());
-        loginRepository.save(login);
+        userRepository.save(login);
 
         String token = jwtUtil.generateToken(login.getUsername(), login.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(login.getUsername());
@@ -139,7 +139,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             String username = jwtUtil.extractUsername(refreshToken);
             if (jwtUtil.validateRefreshToken(refreshToken, username)) {
-                Login login = loginRepository.findByUsername(username)
+                User login = userRepository.findByUsername(username)
                         .orElseThrow(() -> new RuntimeException("User not found"));
                 
                 if (!login.isActive()) {

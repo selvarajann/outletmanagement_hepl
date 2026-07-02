@@ -59,7 +59,7 @@ const NotificationPanel = ({ open, onClose }) => {
           </Typography>
         </Box>
         <Box display="flex" gap={1}>
-          {notifications.length > 0 && (
+          {notifications.filter(n => !n.read).length > 0 && (
             <Button
               size="small"
               startIcon={<DoneAllIcon />}

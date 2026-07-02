@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import FormDialog from "../shared/FormDialog";
-import { GetOutletById } from "../../services/OutletService";
+import { GetWarehouseProducts } from "../../services/StockOrderService";
 import { useOutlets } from "../../hooks/useMasterData";
 import { C } from "../../theme/colors";
 
@@ -16,17 +16,16 @@ const fieldSx = { "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 } 
 export default function StockOrderForm({ open, form, setForm, errors, selectedId, onClose, onSubmit }) {
   const { outlets } = useOutlets();
   const [availableProducts, setAvailableProducts] = useState([]);
-
-  // outlets list now comes from cache — no fetch needed on open
+  const [imsAvailable, setImsAvailable] = useState(true);
 
   // Load products when outletId changes
   useEffect(() => {
     if (!form.outletId) { setAvailableProducts([]); return; }
     const controller = new AbortController();
-    GetOutletById(form.outletId, controller.signal)
+    GetWarehouseProducts(form.outletId, controller.signal)
       .then((r) => {
-        const allProducts = r.divisions?.flatMap((d) => d.products || []) || [];
-        setAvailableProducts(allProducts);
+        setAvailableProducts(r.products || []);
+        setImsAvailable(r.imsAvailable);
       })
       .catch(() => {});
     return () => controller.abort();
@@ -53,6 +52,16 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
     if (value !== raw) { toast.warn("Quantity must be a whole number"); }
     const qty = parseInt(raw) || 1;
     if (qty < 1) { toast.warn("Quantity must be at least 1"); return; }
+
+    const item = form.items[index];
+    if (imsAvailable && item.productId) {
+      const prod = availableProducts.find((p) => String(p.id) === String(item.productId));
+      if (prod && qty > prod.availableQuantity) {
+        toast.warn(`Only ${prod.availableQuantity} available in IMS warehouse`);
+        return;
+      }
+    }
+
     handleItemChange(index, "quantityRequested", qty);
   };
 
@@ -112,6 +121,17 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
           />
         </Grid>
 
+        {/* IMS WARNING BANNER */}
+        {!imsAvailable && (
+          <Grid item xs={12}>
+            <Box sx={{ p: 1.5, backgroundColor: C.amberLight, borderRadius: 2, border: `1px solid ${C.amberMid}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#d97706" }}>
+                ⚠️ IMS Warehouse is currently unavailable. Showing local catalog. Stock availability cannot be guaranteed.
+              </Typography>
+            </Box>
+          </Grid>
+        )}
+
         {/* PRODUCTS SECTION */}
         <Grid item xs={12}>
           <Divider sx={{ my: 1 }} />
@@ -137,7 +157,9 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
                   onChange={(e) => handleItemChange(index, "productId", e.target.value)}
                 >
                   {availableProducts.map((p) => (
-                    <MenuItem key={p.id} value={String(p.id)}>{p.name} ({p.productCode})</MenuItem>
+                    <MenuItem key={p.id} value={String(p.id)}>
+                      {p.name} ({p.productCode}) {imsAvailable ? `- ${p.availableQuantity} in stock` : ''}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -163,9 +185,9 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
 
         {/* LIVE TOTAL */}
         <Grid item xs={12}>
-          <Box sx={{ mt: 2, p: 1.5, backgroundColor: "#f0fdfa", borderRadius: 2, border: "1px solid #ccfbf1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#0f766e" }}>LIVE TOTAL</Typography>
-            <Typography sx={{ fontSize: 16, fontWeight: 800, color: "#0f766e" }}>₹{totalValue.toLocaleString()}</Typography>
+          <Box sx={{ mt: 2, p: 1.5, backgroundColor: C.tealLight, borderRadius: 2, border: "1px solid #ccfbf1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: C.teal }}>LIVE TOTAL</Typography>
+            <Typography sx={{ fontSize: 16, fontWeight: 800, color: C.teal }}>₹{totalValue.toLocaleString()}</Typography>
           </Box>
         </Grid>
       </Grid>

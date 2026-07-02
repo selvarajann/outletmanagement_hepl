@@ -10,13 +10,12 @@ import org.springframework.stereotype.Service;
 
 
 import com.example.outletmanagement.model.entity.ImpersonationSession;
-import com.example.outletmanagement.model.entity.Login;
+import com.example.outletmanagement.model.entity.User;
 import com.example.outletmanagement.model.entity.Role;
 import com.example.outletmanagement.payload.dto.ImpersonationDto.ImpersonationResponse;
 import com.example.outletmanagement.payload.dto.ImpersonationDto.ImpersonationSessionDto;
 import com.example.outletmanagement.repository.ImpersonationSessionRepository;
 import com.example.outletmanagement.repository.UserRepository;
-import com.example.outletmanagement.repository.LoginRepository;
 import com.example.outletmanagement.service.ImpersonationService;
 import com.example.outletmanagement.util.JwtUtil;
 
@@ -28,7 +27,7 @@ public class ImpersonationServiceImpl implements ImpersonationService {
 
     private final ImpersonationSessionRepository impersonationSessionRepository;
     private final UserRepository userRepository;
-    private final LoginRepository loginRepository;
+
     private final JwtUtil jwtUtil;
 
     @Value("${app.impersonation.token-ttl-minutes:30}")

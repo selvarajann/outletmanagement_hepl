@@ -19,6 +19,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countUnreadForUserAndRole(String username, String role);
 
     @Modifying
-    @Query("UPDATE Notification n SET n.read = true WHERE (n.targetUsername = :username OR (n.targetRole = :role AND n.targetUsername IS NULL)) AND n.read = false")
+    @Query(value = "UPDATE notifications SET is_read = true WHERE (target_username = :username OR (target_role = :role AND target_username IS NULL)) AND is_read = false", nativeQuery = true)
     void markAllReadForUserAndRole(String username, String role);
 }

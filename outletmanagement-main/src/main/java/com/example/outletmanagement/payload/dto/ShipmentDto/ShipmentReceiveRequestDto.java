@@ -21,5 +21,7 @@ public class ShipmentReceiveRequestDto {
     public static class ShipmentReceiveItemDto {
         private Long id;
         private Integer quantityReceived;
+        @NotBlank(message = "imsBatchCode is required for receiving items")
+        private String imsBatchCode;
     }
 }

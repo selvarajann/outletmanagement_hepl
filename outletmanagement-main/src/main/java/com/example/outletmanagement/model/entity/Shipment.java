@@ -46,6 +46,21 @@ public class Shipment {
     
     private LocalDate receivedDate;
 
+    // ─── IMS Receipt Sync Tracking ─────────────────────────────────────────────
+    /** CONTRACT_PENDING: Status of outbound IMS receipt push. Values: PENDING / SUCCESS / FAILED / DEAD_LETTER */
+    @Column(name = "ims_receipt_sync_status")
+    private String imsReceiptSyncStatus = "PENDING";
+
+    @Column(name = "ims_receipt_sync_at")
+    private LocalDateTime imsReceiptSyncAt;
+
+    /** CONTRACT_PENDING: Reference code returned by IMS to confirm receipt acknowledgement. */
+    @Column(name = "ims_receipt_reference_code")
+    private String imsReceiptReferenceCode;
+
+    @Column(name = "ims_receipt_retry_count")
+    private Integer imsReceiptRetryCount = 0;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 

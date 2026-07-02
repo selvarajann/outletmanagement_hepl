@@ -30,11 +30,14 @@ const queryClient = new QueryClient({
 })
 
 import { GlobalLoaderProvider } from './context/GlobalLoaderContext.jsx'
+import { AppThemeProvider } from './context/ThemeContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <QueryClientProvider client={queryClient}>
-    <GlobalLoaderProvider>
-      <App />
-    </GlobalLoaderProvider>
+    <AppThemeProvider>
+      <GlobalLoaderProvider>
+        <App />
+      </GlobalLoaderProvider>
+    </AppThemeProvider>
   </QueryClientProvider>,
 )

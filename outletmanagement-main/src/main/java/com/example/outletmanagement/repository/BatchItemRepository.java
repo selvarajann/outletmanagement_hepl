@@ -24,8 +24,26 @@ public interface BatchItemRepository extends JpaRepository<BatchItem, Long> {
            "  AND p.id = :productId " +
            "  AND b.status = 'RECEIVED' " +
            "  AND bi.remainingQuantity > 0 " +
+           "  AND bi.isQuarantined = false " +
            "ORDER BY bi.expiryDate ASC NULLS LAST")
     List<BatchItem> findAvailableByOutletAndProductFEFO(
             @Param("outletId") Long outletId,
             @Param("productId") Long productId);
+
+    @Query("SELECT bi FROM BatchItem bi WHERE bi.product.id = :productId AND bi.imsBatchCode = :batchCode AND bi.remainingQuantity > 0")
+    List<BatchItem> findActiveItemsByProductAndBatchCode(
+            @Param("productId") Long productId,
+            @Param("batchCode") String batchCode);
+
+    org.springframework.data.domain.Page<BatchItem> findByIsQuarantinedTrue(org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT bi FROM BatchItem bi " +
+           "JOIN FETCH bi.batch b " +
+           "JOIN FETCH bi.product p " +
+           "WHERE bi.expiryDate IS NOT NULL " +
+           "  AND bi.expiryDate <= :threshold " +
+           "  AND bi.remainingQuantity > 0 " +
+           "  AND b.status = 'RECEIVED' " +
+           "ORDER BY bi.expiryDate ASC")
+    List<BatchItem> findExpiringBefore(@Param("threshold") java.time.LocalDate threshold);
 }

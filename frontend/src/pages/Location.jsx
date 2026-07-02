@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import LocationTable from "../components/Locations/LocationTable";
 import LocationForm from "../components/Locations/LocationForm";
 import LocationFilter from "../components/Locations/LocationFilter";
-import LocationPagination from "../components/Locations/LocationPagination";
+import TablePagination from "../components/shared/TablePagination";
 import PageHeader from "../components/shared/PageHeader";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import ImportExportBar from "../components/shared/ImportExportBar";
@@ -95,12 +95,12 @@ export default function Location() {
   };
 
   const cards = [
-    { title: "Total Locations", value: loading ? "—" : locations.length, icon: <LocationOnIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Filtered Results", value: loading ? "—" : locations.length, icon: <LocationOnIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
+    { title: "Total Locations",  value: loading ? "—" : locations.length, icon: <LocationOnIcon />, color: C.blue },
+    { title: "Filtered Results", value: loading ? "—" : locations.length, icon: <LocationOnIcon />, color: C.teal },
   ];
 
   return (
-    <Box sx={{ backgroundColor: C.surface, minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
       <PageHeader title="Locations" subtitle="Manage outlet locations" onAdd={() => handleOpen()} addLabel="Add Location" />
       <ImportExportBar
         entity="Locations"
@@ -144,7 +144,7 @@ export default function Location() {
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
       {!loading && <LocationTable locations={locations} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
-      <LocationPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <LocationForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
 
       <ViewDialog open={!!viewItem} onClose={() => setViewItem(null)} title="Location Details">

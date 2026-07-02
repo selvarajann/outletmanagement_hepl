@@ -34,7 +34,9 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final BatchRepository batchRepository;
     private final StockRepository stockRepository;
+    private final com.example.outletmanagement.repository.ImsMasterBatchRepository imsMasterBatchRepository;
     private final AuditLogService auditLogService;
+    private final com.example.outletmanagement.integration.InventoryApiClient inventoryApiClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -80,21 +82,51 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         List<BatchItem> newBatchItems = new ArrayList<>();
 
-        for (ShipmentItem shipmentItem : shipment.getItems()) {
-            int receivedQty = shipmentItem.getQuantityDispatched();
+        for (ShipmentReceiveRequestDto.ShipmentReceiveItemDto receiveItemDto : request.getItems()) {
+            ShipmentItem shipmentItem = shipment.getItems().stream()
+                    .filter(item -> item.getId().equals(receiveItemDto.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("ShipmentItem not found with ID: " + receiveItemDto.getId()));
+
+            int receivedQty = receiveItemDto.getQuantityReceived();
             
-            // Set quantityReceived = quantityDispatched for full receive
+            // Set quantityReceived = quantityDispatched for full receive or based on DTO
             shipmentItem.setQuantityReceived(receivedQty);
 
             if (receivedQty > 0) {
+                // Check against IMS Master Batch
+                java.util.Optional<ImsMasterBatch> masterBatchOpt = imsMasterBatchRepository.findByBatchCodeAndProduct_Id(receiveItemDto.getImsBatchCode(), shipmentItem.getProduct().getId());
+                boolean isQuarantined = false;
+                String quarantineReason = null;
+                LocalDate finalMfgDate = shipmentItem.getMfgDate();
+                LocalDate finalExpiryDate = shipmentItem.getExpiryDate();
+
+                if (masterBatchOpt.isPresent()) {
+                    ImsMasterBatch masterBatch = masterBatchOpt.get();
+                    if (masterBatch.isDeleted()) {
+                        isQuarantined = true;
+                        quarantineReason = "IMS Master Batch is marked as deleted.";
+                    } else {
+                        finalMfgDate = masterBatch.getMfgDate();
+                        finalExpiryDate = masterBatch.getExpiryDate();
+                    }
+                } else {
+                    isQuarantined = true;
+                    quarantineReason = "Batch Code " + receiveItemDto.getImsBatchCode() + " not registered in IMS Master Batch catalog.";
+                }
+
                 // Create Batch Item for the received quantity
                 BatchItem batchItem = new BatchItem();
                 batchItem.setBatch(batch);
                 batchItem.setProduct(shipmentItem.getProduct());
                 batchItem.setQuantity(receivedQty);
                 batchItem.setRemainingQuantity(receivedQty); 
-                batchItem.setMfgDate(shipmentItem.getMfgDate());
-                batchItem.setExpiryDate(shipmentItem.getExpiryDate());
+                batchItem.setImsBatchCode(receiveItemDto.getImsBatchCode());
+                batchItem.setMfgDate(finalMfgDate);
+                batchItem.setExpiryDate(finalExpiryDate);
+                
+                batchItem.setQuarantined(isQuarantined);
+                batchItem.setQuarantineReason(quarantineReason);
                 
                 // Snapshot prices from the product master
                 batchItem.setSellingPrice(shipmentItem.getProduct().getSellingPrice());
@@ -152,6 +184,9 @@ public class ShipmentServiceImpl implements ShipmentService {
         );
 
         log.info("Shipment {} fully received by {}. Batch {} created with {} items.", shipment.getShipmentCode(), receivedBy, batch.getBatchCode(), newBatchItems.size());
+
+        // Phase 10: Async IMS receipt push (non-blocking — failure sets imsReceiptSyncStatus=FAILED)
+        inventoryApiClient.pushReceiptToIms(shipment.getId());
 
         return mapToResponse(shipment);
     }

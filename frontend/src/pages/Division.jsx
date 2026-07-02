@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import DivisionTable from "../components/Divisions/DivisionTable";
 import DivisionForm from "../components/Divisions/DivisionForm";
 import DivisionFilter from "../components/Divisions/DivisionFilter";
-import DivisionPagination from "../components/Divisions/DivisionPagination";
+import TablePagination from "../components/shared/TablePagination";
 import PageHeader from "../components/shared/PageHeader";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import ImportExportBar from "../components/shared/ImportExportBar";
@@ -100,14 +100,14 @@ export default function Division() {
   const withProducts = divisions.filter((d) => d.products?.length > 0).length;
 
   const cards = [
-    { title: "Total Divisions", value: loading ? "—" : divisions.length, icon: <CategoryIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Total Products", value: loading ? "—" : totalProducts, icon: <Inventory2Icon sx={{ color: C.white, fontSize: 22 }} />, color: C.teal, bgColor: C.teal },
-    { title: "Active Divisions", value: loading ? "—" : withProducts, icon: <CheckCircleIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.emerald, bgColor: C.emerald },
-    { title: "Empty Divisions", value: loading ? "—" : divisions.length - withProducts, icon: <CategoryIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.amber, bgColor: C.amber },
+    { title: "Total Divisions", value: loading ? "—" : divisions.length,              icon: <CategoryIcon    />, color: C.blue    },
+    { title: "Total Products",  value: loading ? "—" : totalProducts,                 icon: <Inventory2Icon  />, color: C.teal    },
+    { title: "Active Divisions",value: loading ? "—" : withProducts,                  icon: <CheckCircleIcon />, color: C.emerald },
+    { title: "Empty Divisions", value: loading ? "—" : divisions.length - withProducts,icon: <CategoryIcon   />, color: C.amber   },
   ];
 
   return (
-    <Box sx={{ backgroundColor: C.surface, minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
       <PageHeader title="Divisions" subtitle="Manage product divisions" onAdd={() => handleOpen()} addLabel="Add Division" />
       <ImportExportBar
         entity="Divisions"
@@ -151,7 +151,7 @@ export default function Division() {
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
       {!loading && <DivisionTable divisions={divisions} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
-      <DivisionPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <DivisionForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
 
       <ViewDialog open={!!viewItem} onClose={() => setViewItem(null)} title="Division Details">

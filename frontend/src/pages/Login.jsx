@@ -15,52 +15,7 @@ import {
   ArrowForward,
 } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { C } from "../theme/colors";
-
-// ── Premium light theme for Login ─────────────────────────────────────────────
-const loginTheme = createTheme({
-  palette: {
-    mode: "light",
-    primary: { main: C.blue },
-    background: { default: C.bg, paper: C.white },
-    text: { primary: C.navy, secondary: C.slateMid },
-  },
-  typography: { fontFamily: "'Inter', 'Segoe UI', sans-serif" },
-  shape: { borderRadius: 14 },
-  components: {
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 12,
-            backgroundColor: C.white,
-            transition: "all 0.2s",
-            boxShadow: "0 1px 2px rgba(15,23,42,0.03)",
-            "& fieldset": { borderColor: C.border },
-            "&:hover fieldset": { borderColor: "#cbd5e1" },
-            "&.Mui-focused fieldset": { borderColor: C.blue, borderWidth: 2 },
-            "&.Mui-focused": { boxShadow: "0 4px 12px rgba(37,99,235,0.08)" },
-          },
-          "& .MuiInputLabel-root": { color: C.slateMid, fontSize: "14px", fontWeight: 500 },
-          "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
-          "& .MuiInputBase-input": { color: C.navy, fontSize: "14px", fontWeight: 500 },
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          textTransform: "none",
-          fontWeight: 700,
-          fontSize: "14px",
-          letterSpacing: 0.3,
-        },
-      },
-    },
-  },
-});
 
 // ── Animated background blobs ───────────────────────────────────────────────
 const blobs = [
@@ -103,7 +58,6 @@ const Login = () => {
   };
 
   return (
-    <ThemeProvider theme={loginTheme}>
       <Box
         sx={{
           minHeight: "100vh",
@@ -171,7 +125,22 @@ const Login = () => {
               Sign in to your account
             </Typography>
 
-            <Box component="form" sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2.5 }} noValidate>
+            <Box component="form" sx={{ 
+              width: "100%", display: "flex", flexDirection: "column", gap: 2.5,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "12px",
+                backgroundColor: C.white,
+                transition: "all 0.2s",
+                boxShadow: "0 1px 2px rgba(15,23,42,0.03)",
+                "& fieldset": { borderColor: C.border },
+                "&:hover fieldset": { borderColor: "var(--color-slateMid)" },
+                "&.Mui-focused fieldset": { borderColor: C.blue, borderWidth: "2px" },
+                "&.Mui-focused": { boxShadow: "0 4px 12px rgba(37,99,235,0.08)" },
+              },
+              "& .MuiInputLabel-root": { color: C.slateMid, fontSize: "14px", fontWeight: 500 },
+              "& .MuiInputLabel-root.Mui-focused": { color: C.blue },
+              "& .MuiInputBase-input": { color: C.navy, fontSize: "14px", fontWeight: 500 },
+            }} noValidate>
               <TextField
                 fullWidth
                 label="Username"
@@ -223,8 +192,9 @@ const Login = () => {
                 disabled={loading}
                 endIcon={!loading && <ArrowForward sx={{ fontSize: "16px !important", transition: "transform 0.2s" }} />}
                 sx={{
+                  borderRadius: "12px", textTransform: "none", fontWeight: 700, fontSize: "14px", letterSpacing: 0.3,
                   mt: 1, py: 1.5,
-                  background: C.navy, color: C.white,
+                  background: C.navy, color: C.bg,
                   boxShadow: "0 4px 12px rgba(15,23,42,0.15)",
                   "&:hover": {
                     background: "#1e293b",
@@ -246,7 +216,6 @@ const Login = () => {
           </Box>
         </Paper>
       </Box>
-    </ThemeProvider>
   );
 };
 

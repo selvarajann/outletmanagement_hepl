@@ -19,6 +19,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PageHeader      from "../components/shared/PageHeader";
 import InfoCard        from "../components/shared/InfoCard";
 import EnterpriseTable from "../components/shared/EnterpriseTable";
+import FormDialog      from "../components/shared/FormDialog";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import ConfirmDialog   from "../components/shared/ConfirmDialog";
 import { C }           from "../theme/colors";
@@ -176,10 +177,10 @@ export default function UserManagement() {
   const adminCount    = useMemo(() => users.filter(u => u.role === "SUPER_ADMIN").length, [users]);
 
   const cards = useMemo(() => [
-    { title: "Total Users",    value: loading ? "—" : users.length, icon: <PeopleAltIcon sx={{ color: C.white, fontSize: 22 }} />,      color: C.blue,    bgColor: C.blue },
-    { title: "Active Users",   value: loading ? "—" : active,       icon: <CheckCircleIcon sx={{ color: C.white, fontSize: 22 }} />,    color: C.emerald, bgColor: C.emerald },
-    { title: "Inactive Users", value: loading ? "—" : inactive,     icon: <BlockIcon sx={{ color: C.white, fontSize: 22 }} />,          color: C.red,     bgColor: C.red },
-    { title: "Super Admins",   value: loading ? "—" : adminCount,   icon: <AdminPanelSettings sx={{ color: C.white, fontSize: 22 }} />, color: "#6d28d9", bgColor: "#6d28d9" },
+    { title: "Total Users",    value: loading ? "—" : users.length, icon: <PeopleAltIcon      />, color: C.blue    },
+    { title: "Active Users",   value: loading ? "—" : active,       icon: <CheckCircleIcon    />, color: C.emerald },
+    { title: "Inactive Users", value: loading ? "—" : inactive,     icon: <BlockIcon          />, color: C.red     },
+    { title: "Super Admins",   value: loading ? "—" : adminCount,   icon: <AdminPanelSettings />, color: C.violet  },
   ], [loading, users.length, active, inactive, adminCount]);
 
   // ── Table columns ─────────────────────────────────────────────────────────
@@ -249,7 +250,7 @@ export default function UserManagement() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ backgroundColor: C.surface, minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
 
       {/* Header */}
       <PageHeader
@@ -285,123 +286,79 @@ export default function UserManagement() {
       )}
 
       {/* ── Create / Edit Dialog ─────────────────────────────────────────── */}
-      <Dialog
+      <FormDialog
         open={open}
         onClose={handleClose}
+        onSubmit={handleSubmit}
+        title={editingId ? "Edit User" : "Add New User"}
+        submitLabel={editingId ? "Update" : "Create"}
         maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, border: `1px solid ${C.border}` } }}
       >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1, pt: 2.5, px: 3 }}>
-          <Typography fontWeight={800} fontSize={16} color={C.navy}>
-            {editingId ? "Edit User" : "Add New User"}
-          </Typography>
-          <IconButton size="small" onClick={handleClose} sx={{ color: C.slate }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <Divider />
-
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <Box display="flex" flexDirection="column" gap={2.5}>
-            <TextField
-              label="Username"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-              error={!!errors.username}
-              helperText={errors.username}
-              disabled={!!editingId}
-              fullWidth
-              size="small"
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+        <TextField
+          label="Username"
+          value={form.username}
+          onChange={(e) => setForm({ ...form, username: e.target.value })}
+          error={!!errors.username}
+          helperText={errors.username}
+          disabled={!!editingId}
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          error={!!errors.email}
+          helperText={errors.email}
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label={editingId ? "New Password (leave blank to keep)" : "Password"}
+          type="password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          error={!!errors.password}
+          helperText={errors.password}
+          fullWidth
+          size="small"
+        />
+        <TextField
+          select
+          label="Role"
+          value={form.role}
+          onChange={(e) => setForm({ ...form, role: e.target.value })}
+          error={!!errors.role}
+          helperText={errors.role}
+          fullWidth
+          size="small"
+        >
+          {ROLES.map((r) => (
+            <MenuItem key={r} value={r}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <RoleChip role={r} />
+              </Box>
+            </MenuItem>
+          ))}
+        </TextField>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={form.active}
+              onChange={(e) => setForm({ ...form, active: e.target.checked })}
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: C.emerald },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: C.emerald },
+              }}
             />
-            <TextField
-              label="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              error={!!errors.email}
-              helperText={errors.email}
-              fullWidth
-              size="small"
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-            />
-            <TextField
-              label={editingId ? "New Password (leave blank to keep)" : "Password"}
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              error={!!errors.password}
-              helperText={errors.password}
-              fullWidth
-              size="small"
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-            />
-            <TextField
-              select
-              label="Role"
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-              error={!!errors.role}
-              helperText={errors.role}
-              fullWidth
-              size="small"
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-            >
-              {ROLES.map((r) => (
-                <MenuItem key={r} value={r}>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <RoleChip role={r} />
-                  </Box>
-                </MenuItem>
-              ))}
-            </TextField>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={form.active}
-                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                  sx={{
-                    "& .MuiSwitch-switchBase.Mui-checked": { color: C.emerald },
-                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: C.emerald },
-                  }}
-                />
-              }
-              label={
-                <Typography fontSize={13} fontWeight={600} color={C.slate}>
-                  {form.active ? "Active" : "Inactive"}
-                </Typography>
-              }
-            />
-          </Box>
-        </DialogContent>
-
-        <Divider />
-        <DialogActions sx={{ px: 3, py: 1.5, gap: 1 }}>
-          <Button
-            onClick={handleClose}
-            variant="outlined"
-            size="small"
-            sx={{ textTransform: "none", borderRadius: 2, borderColor: C.border, color: C.slate, "&:hover": { borderColor: C.slate } }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            size="small"
-            sx={{
-              textTransform: "none",
-              borderRadius: 2,
-              fontWeight: 700,
-              backgroundColor: C.blue,
-              boxShadow: "none",
-              "&:hover": { backgroundColor: C.blueDark, boxShadow: "none" },
-            }}
-          >
-            {editingId ? "Update" : "Create"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          }
+          label={
+            <Typography fontSize={13} fontWeight={600} color={C.slate}>
+              {form.active ? "Active" : "Inactive"}
+            </Typography>
+          }
+        />
+      </FormDialog>
 
       {/* ── View Dialog ───────────────────────────────────────────────────── */}
       <ViewDialog

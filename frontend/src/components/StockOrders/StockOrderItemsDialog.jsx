@@ -60,9 +60,9 @@ export default function StockOrderItemsDialog({ open, onClose, order, loading })
               </TableBody>
             </Table>
             <Box display="flex" justifyContent="flex-end" mt={2}>
-              <Box sx={{ p: 1.5, backgroundColor: "#f0fdfa", borderRadius: 2, border: "1px solid #ccfbf1", minWidth: 200, textAlign: "right" }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#0f766e" }}>ORDER TOTAL</Typography>
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#0f766e" }}>₹{total.toLocaleString()}</Typography>
+              <Box sx={{ p: 1.5, backgroundColor: C.tealLight, borderRadius: 2, border: "1px solid #ccfbf1", minWidth: 200, textAlign: "right" }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: C.teal }}>ORDER TOTAL</Typography>
+                <Typography sx={{ fontSize: 18, fontWeight: 800, color: C.teal }}>₹{total.toLocaleString()}</Typography>
               </Box>
             </Box>
           </>

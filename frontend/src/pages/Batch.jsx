@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import PageHeader from "../components/shared/PageHeader";
 import BatchFilter from "../components/Batches/BatchFilter";
 import BatchTable from "../components/Batches/BatchTable";
-import BatchPagination from "../components/Batches/BatchPagination";
+import TablePagination from "../components/shared/TablePagination";
 import BatchPriceEditDialog from "../components/Batches/BatchPriceEditDialog";
 import BatchItemsDialog from "../components/Batches/BatchItemsDialog";
 import BatchReceiveDialog from "../components/Batches/BatchReceiveDialog";
@@ -149,15 +149,16 @@ export default function Batch() {
   const totalValue = rows.reduce((s, b) => s + (b.totalValue || 0), 0);
 
   const cards = [
-    { title: "Total Batches", value: rows.length, icon: <LocalShippingIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.blue, bgColor: C.blue },
-    { title: "Received", value: received, icon: <CheckCircleIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.emerald, bgColor: C.emerald },
-    { title: "Cancelled", value: cancelled, icon: <CancelIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.red, bgColor: C.red },
-    { title: "Total Value", value: `₹${totalValue.toLocaleString("en-IN")}`, icon: <CurrencyRupeeIcon sx={{ color: C.white, fontSize: 22 }} />, color: C.amber, bgColor: C.amber },
+    { title: "Total Batches", value: rows.length,                                              icon: <LocalShippingIcon  />, color: C.blue    },
+    { title: "Received",      value: received,                                                 icon: <CheckCircleIcon    />, color: C.emerald },
+    { title: "Cancelled",     value: cancelled,                                                icon: <CancelIcon         />, color: C.red     },
+    { title: "Total Value",   value: `₹${totalValue.toLocaleString("en-IN")}`,                icon: <CurrencyRupeeIcon  />, color: C.amber   },
   ];
 
   return (
     <Box sx={{ p: 3, backgroundColor: C.surface, minHeight: "100vh" }}>
       <PageHeader title="Batches" subtitle="Record and track stock batches received from Inventory Management System" />
+      
       {!loading && (
         <Grid container spacing={2.5} mb={3}>
           {cards.map((c) => (
@@ -168,6 +169,7 @@ export default function Batch() {
         </Grid>
       )}
       {loading && <Grid container spacing={2.5} mb={3}>{[0,1,2,3].map((i) => <Grid item xs={12} sm={6} lg={3} key={i}><Skeleton variant="rounded" height={82} sx={{ borderRadius: 3 }} /></Grid>)}</Grid>}
+      
       <BatchFilter filters={filters} onChange={handleFilterChange} />
 
       {loading ? (
@@ -175,7 +177,7 @@ export default function Batch() {
       ) : rows.length > 0 ? (
         <>
           <BatchTable batches={rows} onReceive={handleOpenReceive} onCancel={requestCancelBatch} onEditPrices={handleEditPrices} onView={setViewItem} onViewItems={handleViewItems} />
-          <BatchPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       ) : (
         <Box sx={{ p: 10, textAlign: "center", backgroundColor: C.white, borderRadius: 3, border: `1px dashed ${C.border}` }}>
