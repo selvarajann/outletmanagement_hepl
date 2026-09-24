@@ -31,3 +31,34 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Firebase credentials — NEVER commit
+src/main/resources/firebase-service-account.json
+*-service-account.json
+*.pem
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# ─── Log files ───────────────────────────────────────────────
+*.log
+app.log
+compile.log
+testrunner_output.log
+
+# ─── Temp / compile error dumps ──────────────────────────────
+compile_errors*.txt
+test_logs*.txt
+
+# ─── Scratch / dev-only scripts ──────────────────────────────
+scratch/
+TestScript.java
+
+# ─── Runtime-uploaded files (never source code) ──────────────
+uploads/reports/
+uploads/products/
+
+# ─── Credentials / sensitive config ──────────────────────────
+src/main/resources/application-prod.properties
