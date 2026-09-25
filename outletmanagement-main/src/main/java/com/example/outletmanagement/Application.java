@@ -2,9 +2,6 @@ package com.example.outletmanagement;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -15,10 +12,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * {@code @EnableAsync}       — activates Spring's async executor, required by {@code AuditLogService}.
  * {@code @EnableScheduling}  — activates cron scheduler, required by {@code AuditCleanupScheduler}.
  */
-@SpringBootApplication(exclude = {
-    MongoAutoConfiguration.class,
-    MongoDataAutoConfiguration.class,
-    BatchAutoConfiguration.class
+@SpringBootApplication(excludeName = {
+    "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration",
+    "org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration",
+    "org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration"
 })
 @EnableAsync
 @EnableScheduling
