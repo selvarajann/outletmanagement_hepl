@@ -63,6 +63,17 @@ const SystemJobs = () => {
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete job")
   });
 
+  const handleBulkDelete = async (ids) => {
+    
+    try {
+      await Promise.all(ids.map(id => DeleteJob(id)));
+      toast.success(`${ids.length} jobs deleted successfully`);
+      queryClient.invalidateQueries(["systemJobs"]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete jobs");
+    }
+  };
+
   const runMutation = useMutation({
     mutationFn: RunJob,
     onSuccess: () => {
@@ -86,7 +97,7 @@ const SystemJobs = () => {
 
   const handleDownload = () => {
     setDownloading(true);
-    window.open("http://localhost:8080/api/jobs/daily-sales-report/download", "_blank");
+    window.open(`${import.meta.env.VITE_API_BASE_URL.replace('/api/v1', '')}/api/jobs/daily-sales-report/download`, "_blank");
     toast.info("Downloading PDF...");
     setTimeout(() => setDownloading(false), 2000);
   };
@@ -175,6 +186,7 @@ const SystemJobs = () => {
         <EnterpriseTable
           data={jobs || []}
           columns={columns}
+          onBulkDelete={handleBulkDelete}
         />
       </Box>
 

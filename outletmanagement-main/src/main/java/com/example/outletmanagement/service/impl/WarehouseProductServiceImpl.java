@@ -13,8 +13,12 @@ import com.example.outletmanagement.repository.DivisionRepository;
 import com.example.outletmanagement.repository.WarehouseProductRepository;
 import com.example.outletmanagement.service.WarehouseProductService;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
 
 @Slf4j
 @Service
@@ -55,6 +59,43 @@ public class WarehouseProductServiceImpl implements WarehouseProductService {
     @Override
     public Page<WarehouseProductResponse> getAllProducts(Pageable pageable) {
         return warehouseProductRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    @Override
+    public Page<WarehouseProductResponse> filterProducts(
+            String keyword, Long divisionId,
+            BigDecimal minSellingPrice, BigDecimal maxSellingPrice,
+            BigDecimal minPurchasePrice, BigDecimal maxPurchasePrice,
+            Pageable pageable) {
+
+        return warehouseProductRepository.findAll((root, query, cb) -> {
+            ArrayList<Predicate> predicates = new ArrayList<>();
+
+            if (keyword != null && !keyword.isBlank()) {
+                String kw = "%" + keyword.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("name")), kw),
+                    cb.like(cb.lower(root.get("productCode")), kw)
+                ));
+            }
+            if (divisionId != null) {
+                predicates.add(cb.equal(root.get("division").get("id"), divisionId));
+            }
+            if (minSellingPrice != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("sellingPrice"), minSellingPrice));
+            }
+            if (maxSellingPrice != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("sellingPrice"), maxSellingPrice));
+            }
+            if (minPurchasePrice != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("purchasePrice"), minPurchasePrice));
+            }
+            if (maxPurchasePrice != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("purchasePrice"), maxPurchasePrice));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable).map(this::mapToResponse);
     }
 
     @Override
@@ -108,6 +149,7 @@ public class WarehouseProductServiceImpl implements WarehouseProductService {
         r.setName(product.getName());
         r.setProductCode(product.getProductCode());
         r.setDivisionId(product.getDivision() != null ? product.getDivision().getId() : null);
+        r.setDivisionName(product.getDivision() != null ? product.getDivision().getName() : null);
         r.setUimPrice(product.getUimPrice());
         r.setMrp(product.getMrp());
         r.setSellingPrice(product.getSellingPrice());

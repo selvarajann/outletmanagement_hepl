@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OutletResponse {
-
     private Long id;
     private String outletName;
     private String outletCode;

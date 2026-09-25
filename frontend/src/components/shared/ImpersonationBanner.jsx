@@ -1,10 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Typography, Button, Paper } from "@mui/material";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import { AuthContext } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 
 const ImpersonationBanner = () => {
-  const { impersonation, isImpersonating, stopImpersonation } = useContext(AuthContext);
+  const { impersonation, isImpersonating, stopImpersonation } = useAuth();
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {

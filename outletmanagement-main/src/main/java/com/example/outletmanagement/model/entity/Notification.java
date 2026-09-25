@@ -53,6 +53,7 @@ public class Notification {
     @Column(name = "target_role")
     private String targetRole;
 
+    @Builder.Default
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
 

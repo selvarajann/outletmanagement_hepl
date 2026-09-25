@@ -30,6 +30,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.example.outletmanagement.model.enums.ProductStatus;
+import com.example.outletmanagement.model.enums.StockReturnStatus;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupRequestDto;
+import com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto;
+import com.example.outletmanagement.repository.BatchItemRepository;
+import com.example.outletmanagement.repository.DivisionRepository;
+import com.example.outletmanagement.repository.ImsMasterBatchRepository;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,17 +51,17 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
     private final ShipmentRepository shipmentRepository;
     private final StockOrderRepository stockOrderRepository;
     private final ProductRepository productRepository;
-    private final com.example.outletmanagement.repository.ImsMasterBatchRepository imsMasterBatchRepository;
-    private final com.example.outletmanagement.repository.BatchItemRepository batchItemRepository;
+    private final ImsMasterBatchRepository imsMasterBatchRepository;
+    private final BatchItemRepository batchItemRepository;
     private final StockReturnRepository stockReturnRepository;
-    private final com.example.outletmanagement.repository.DivisionRepository divisionRepository;
+    private final DivisionRepository divisionRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     @Transactional
-    public com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncResponseDto handleBatchSync(com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncRequestDto request) {
+    public ImsBatchSyncResponseDto handleBatchSync(ImsBatchSyncRequestDto request) {
         String payloadJson = "";
         try {
             payloadJson = objectMapper.writeValueAsString(request);
@@ -74,7 +87,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 if (isDuplicate) {
                     log.info("Duplicate Batch Sync Webhook for {}", request.getBatchCode());
                     auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "BATCH_SYNC_DUPLICATE", "ImsMasterBatch", request.getBatchCode(), "POST", "/api/webhook/ims/batch-sync", "IMS", 200, payloadJson, null);
-                    return new com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncResponseDto(request.getBatchCode(), "IGNORED");
+                    return new ImsBatchSyncResponseDto(request.getBatchCode(), "IGNORED");
                 }
 
                 existingBatch.setMfgDate(request.getMfgDate());
@@ -95,7 +108,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 }
 
                 auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "BATCH_SYNC_UPDATED", "ImsMasterBatch", request.getBatchCode(), "POST", "/api/webhook/ims/batch-sync", "IMS", 200, payloadJson, null);
-                return new com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncResponseDto(request.getBatchCode(), "UPDATED");
+                return new ImsBatchSyncResponseDto(request.getBatchCode(), "UPDATED");
 
             } else {
                 ImsMasterBatch newBatch = new ImsMasterBatch();
@@ -109,7 +122,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 imsMasterBatchRepository.save(newBatch);
 
                 auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "BATCH_SYNC_CREATED", "ImsMasterBatch", request.getBatchCode(), "POST", "/api/webhook/ims/batch-sync", "IMS", 200, payloadJson, null);
-                return new com.example.outletmanagement.payload.dto.WebhookDto.ImsBatchSyncResponseDto(request.getBatchCode(), "CREATED");
+                return new ImsBatchSyncResponseDto(request.getBatchCode(), "CREATED");
             }
         } catch (IllegalArgumentException e) {
             throw e;
@@ -121,7 +134,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
     @Override
     @Transactional
-    public com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto handleProductSync(com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncRequestDto request) {
+    public ImsProductSyncResponseDto handleProductSync(ImsProductSyncRequestDto request) {
         String payloadJson = "";
         try {
             payloadJson = objectMapper.writeValueAsString(request);
@@ -164,7 +177,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 if (isDuplicate) {
                     log.info("Duplicate Product Sync Webhook for {}", request.getProductCode());
                     auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_DUPLICATE", "Products", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 200, payloadJson, null);
-                    return new com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto(request.getProductCode(), "IGNORED");
+                    return new ImsProductSyncResponseDto(request.getProductCode(), "IGNORED");
                 }
                 
                 existingProduct.setName(request.getName());
@@ -173,13 +186,13 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 existingProduct.setSellingPrice(request.getSellingPrice());
                 existingProduct.setPurchasePrice(request.getPurchasePrice());
                 if (request.getImageUrl() != null) existingProduct.setImageUrl(request.getImageUrl());
-                existingProduct.setStatus(com.example.outletmanagement.model.enums.ProductStatus.valueOf(reqStatus));
+                existingProduct.setStatus(ProductStatus.valueOf(reqStatus));
                 if (division != null) existingProduct.setDivision(division);
                 
                 productRepository.save(existingProduct);
                 
                 auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_UPDATED", "Products", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 200, payloadJson, null);
-                return new com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto(request.getProductCode(), "UPDATED");
+                return new ImsProductSyncResponseDto(request.getProductCode(), "UPDATED");
                 
             } else {
                 Products newProduct = new Products();
@@ -192,13 +205,13 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
                 if (request.getImageUrl() != null) newProduct.setImageUrl(request.getImageUrl());
                 
                 String reqStatus = request.getStatus() != null ? request.getStatus() : "ACTIVE";
-                newProduct.setStatus(com.example.outletmanagement.model.enums.ProductStatus.valueOf(reqStatus));
+                newProduct.setStatus(ProductStatus.valueOf(reqStatus));
                 if (division != null) newProduct.setDivision(division);
                 
                 productRepository.save(newProduct);
                 
                 auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_CREATED", "Products", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 200, payloadJson, null);
-                return new com.example.outletmanagement.payload.dto.WebhookDto.ImsProductSyncResponseDto(request.getProductCode(), "CREATED");
+                return new ImsProductSyncResponseDto(request.getProductCode(), "CREATED");
             }
         } catch (Exception e) {
             auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "PRODUCT_SYNC_FAILED", "Products", request.getProductCode(), "POST", "/api/webhook/ims/product-sync", "IMS", 500, payloadJson, e.getMessage());
@@ -276,7 +289,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
     @Override
     @Transactional
-    public com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto handleReturnAck(com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckRequestDto request) {
+    public ReturnAckResponseDto handleReturnAck(ReturnAckRequestDto request) {
         String payloadJson = "";
         try {
             payloadJson = objectMapper.writeValueAsString(request);
@@ -287,16 +300,16 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         // Idempotency: Check if already acknowledged or has the same imsAckCode
         if (stockReturn.getImsAckCode() != null && stockReturn.getImsAckCode().equals(request.getImsAckCode()) ||
-                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.ACKNOWLEDGED ||
-                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
+                stockReturn.getStatus() == StockReturnStatus.ACKNOWLEDGED ||
+                stockReturn.getStatus() == StockReturnStatus.COMPLETED) {
             
             log.warn("Duplicate webhook received for Return Code: {}", request.getReturnCode());
             auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_DUPLICATE", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
-            return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "IGNORED");
+            return new ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "IGNORED");
         }
 
         try {
-            stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.valueOf(request.getStatus().toUpperCase()));
+            stockReturn.setStatus(StockReturnStatus.valueOf(request.getStatus().toUpperCase()));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid status: " + request.getStatus());
         }
@@ -312,12 +325,12 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_ACK_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-ack", "IMS", 200, payloadJson, null);
 
-        return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "SUCCESS");
+        return new ReturnAckResponseDto(request.getReturnCode(), request.getImsAckCode(), stockReturn.getStatus().name(), "SUCCESS");
     }
 
     @Override
     @Transactional
-    public com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto handleReturnPickup(com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupRequestDto request) {
+    public ReturnPickupResponseDto handleReturnPickup(ReturnPickupRequestDto request) {
         String payloadJson = "";
         try {
             payloadJson = objectMapper.writeValueAsString(request);
@@ -328,20 +341,20 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         // Idempotency check
         if (stockReturn.getPickupReferenceCode() != null && stockReturn.getPickupReferenceCode().equals(request.getPickupReferenceCode()) ||
-                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.PICKED_UP ||
-                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
+                stockReturn.getStatus() == StockReturnStatus.PICKED_UP ||
+                stockReturn.getStatus() == StockReturnStatus.COMPLETED) {
 
             log.warn("Duplicate pickup webhook received for Return Code: {}", request.getReturnCode());
             auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_DUPLICATE", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
-            return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "IGNORED");
+            return new ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "IGNORED");
         }
 
         // Status transition validation: Only ACKNOWLEDGED -> PICKED_UP is allowed
-        if (stockReturn.getStatus() != com.example.outletmanagement.model.enums.StockReturnStatus.ACKNOWLEDGED) {
+        if (stockReturn.getStatus() != StockReturnStatus.ACKNOWLEDGED) {
             throw new IllegalArgumentException("Invalid state transition. StockReturn must be ACKNOWLEDGED to be marked as PICKED_UP.");
         }
 
-        stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.PICKED_UP);
+        stockReturn.setStatus(StockReturnStatus.PICKED_UP);
         stockReturn.setPickupReferenceCode(request.getPickupReferenceCode());
 
         if (request.getNotes() != null && !request.getNotes().isEmpty()) {
@@ -353,12 +366,12 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_PICKUP_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-pickup", "IMS", 200, payloadJson, null);
 
-        return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "SUCCESS");
+        return new ReturnPickupResponseDto(request.getReturnCode(), request.getPickupReferenceCode(), "SUCCESS");
     }
 
     @Override
     @Transactional
-    public com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto handleReturnCompletion(com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionRequestDto request) {
+    public ReturnCompletionResponseDto handleReturnCompletion(ReturnCompletionRequestDto request) {
         String payloadJson = "";
         try {
             payloadJson = objectMapper.writeValueAsString(request);
@@ -369,19 +382,19 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         // Idempotency check
         if (stockReturn.getCompletionReferenceCode() != null && stockReturn.getCompletionReferenceCode().equals(request.getCompletionReferenceCode()) ||
-                stockReturn.getStatus() == com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED) {
+                stockReturn.getStatus() == StockReturnStatus.COMPLETED) {
 
             log.warn("Duplicate completion webhook received for Return Code: {}", request.getReturnCode());
             auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_DUPLICATE", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
-            return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "IGNORED");
+            return new ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "IGNORED");
         }
 
         // Status transition validation: Only PICKED_UP -> COMPLETED is allowed
-        if (stockReturn.getStatus() != com.example.outletmanagement.model.enums.StockReturnStatus.PICKED_UP) {
+        if (stockReturn.getStatus() != StockReturnStatus.PICKED_UP) {
             throw new IllegalArgumentException("Invalid state transition. StockReturn must be PICKED_UP to be marked as COMPLETED.");
         }
 
-        stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.COMPLETED);
+        stockReturn.setStatus(StockReturnStatus.COMPLETED);
         stockReturn.setCompletionReferenceCode(request.getCompletionReferenceCode());
 
         if (request.getNotes() != null && !request.getNotes().isEmpty()) {
@@ -393,7 +406,7 @@ public class ImsWebhookServiceImpl implements ImsWebhookService {
 
         auditLogService.saveAsync(UUID.randomUUID().toString(), "IMS_WEBHOOK", "RETURN_COMPLETED_RECEIVED", "StockReturn", request.getReturnCode(), "POST", "/api/webhook/ims/return-completion", "IMS", 200, payloadJson, null);
 
-        return new com.example.outletmanagement.payload.dto.WebhookDto.ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "SUCCESS");
+        return new ReturnCompletionResponseDto(request.getReturnCode(), request.getCompletionReferenceCode(), "SUCCESS");
     }
 
     @Override

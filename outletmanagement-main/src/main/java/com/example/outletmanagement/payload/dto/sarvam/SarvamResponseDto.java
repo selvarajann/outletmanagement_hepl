@@ -29,6 +29,7 @@ public class SarvamResponseDto {
     public static class ResponseMessage {
         private String role;
         private String content;
+        private String reasoning_content;
     }
 
     @Data

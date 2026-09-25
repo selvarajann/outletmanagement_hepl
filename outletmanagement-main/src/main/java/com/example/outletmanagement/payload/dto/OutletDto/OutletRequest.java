@@ -39,4 +39,5 @@ public class OutletRequest {
     @NotEmpty(message = "At least one division-product mapping is required")
     @Valid
     private List<OutletDivisionProductRequest> mappings;
+    private boolean active = true;
 }

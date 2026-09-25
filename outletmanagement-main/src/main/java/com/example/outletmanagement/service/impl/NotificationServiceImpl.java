@@ -22,6 +22,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.example.outletmanagement.service.FcmPushService fcmPushService;
 
     @Override
     @Transactional
@@ -46,6 +47,9 @@ public class NotificationServiceImpl implements NotificationService {
                 "/queue/notifications", 
                 response
         );
+        
+        // 3. Send FCM Push Notification
+        fcmPushService.sendPushToUser(username, title, message);
     }
 
     @Override
@@ -70,6 +74,9 @@ public class NotificationServiceImpl implements NotificationService {
                 "/topic/role/" + role, 
                 response
         );
+        
+        // 3. Send FCM Push Notification to all (simplified, ideally you would filter by role)
+        fcmPushService.sendPushToAll(title, message);
     }
 
     @Override

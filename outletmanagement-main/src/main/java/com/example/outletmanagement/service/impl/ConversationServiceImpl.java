@@ -35,15 +35,18 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     @Transactional
     public ChatResponseDto processChatMessage(String userId, ChatRequestDto request) {
-        ChatConversation conversation;
+        ChatConversation conversation=null;
         List<ChatMessage> history = null;
 
         // 1. Load or Create Conversation
         if (request.getConversationId() != null) {
             conversation = conversationRepository.findByIdAndUserId(request.getConversationId(), userId)
-                    .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
-            history = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-        } else {
+                    .orElse(null);
+            if (conversation != null) {
+                history = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+            }
+        }
+        if (conversation == null) {
             // Generate title from first message (first 30 chars)
             String title = request.getMessage().length() > 30 
                     ? request.getMessage().substring(0, 30) + "..." 
@@ -69,15 +72,22 @@ public class ConversationServiceImpl implements ConversationService {
         ChatResponseDto intentResponse = chatbotIntentService.processIntent(userId, conversation.getId(), request.getMessage());
         
         String aiResponseText;
-        if ("NAVIGATION".equals(intentResponse.getType()) || "OPEN_MODAL".equals(intentResponse.getType()) || "SUGGESTIONS".equals(intentResponse.getType())) {
+        if (intentResponse.getReply() != null && !intentResponse.getReply().isBlank()) {
             aiResponseText = intentResponse.getReply();
         } else {
-            // 4. Call AI Service with context
+            // 4. Call AI Service with context for open-ended questions
             String context = intentResponse.getMetadata();
-            aiResponseText = sarvamAiService.getChatCompletion(history, request.getMessage(), context);
+            try {
+                aiResponseText = sarvamAiService.getChatCompletion(history, request.getMessage(), context);
+            } catch (Exception ex) {
+                log.warn("Secondary AI completion failed, falling back: {}", ex.getMessage());
+                aiResponseText = "I am here to help you manage your outlet system! Type 'help' to view available commands.";
+                intentResponse.setSuggestions(java.util.List.of("Create a Stock Order", "Dashboard Summary", "View Products"));
+            }
             
-            if ("Sorry for inconvenience, try a different way.".equals(aiResponseText)) {
-                intentResponse.setSuggestions(java.util.List.of("View Products", "Check Stock Summary", "Create a Stock Order"));
+            if (aiResponseText == null || "Sorry for inconvenience, try a different way.".equals(aiResponseText)) {
+                aiResponseText = "I am here to help you manage your outlet system! Type 'help' to view available commands.";
+                intentResponse.setSuggestions(java.util.List.of("Create a Stock Order", "Dashboard Summary", "View Products"));
             }
         }
 

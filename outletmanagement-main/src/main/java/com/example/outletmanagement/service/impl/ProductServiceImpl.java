@@ -1,10 +1,7 @@
 package com.example.outletmanagement.service.impl;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,13 +26,13 @@ import com.example.outletmanagement.payload.response.ImportResult;
 import com.example.outletmanagement.repository.DivisionRepository;
 import com.example.outletmanagement.repository.OutletDivisionProductRepository;
 import com.example.outletmanagement.repository.ProductRepository;
-import com.example.outletmanagement.service.ProductService;
 import com.example.outletmanagement.service.EmailService;
+import com.example.outletmanagement.service.FailedImportStorageService;
+import com.example.outletmanagement.service.ProductService;
 import com.example.outletmanagement.specification.ProductSpecification;
 import com.example.outletmanagement.util.ExportUtil;
 import com.example.outletmanagement.util.FileUtil;
 import com.example.outletmanagement.util.FileValidator;
-import com.example.outletmanagement.service.FailedImportStorageService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,11 +106,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getProductById(Long id) {
+        
         Products product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         return mapToResponse(product);
     }
-
     @Override
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Products product = productRepository.findById(id)

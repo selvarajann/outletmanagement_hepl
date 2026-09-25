@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.example.outletmanagement.integration.InventoryApiClient;
+import com.example.outletmanagement.repository.ImsMasterBatchRepository;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -34,9 +36,9 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final BatchRepository batchRepository;
     private final StockRepository stockRepository;
-    private final com.example.outletmanagement.repository.ImsMasterBatchRepository imsMasterBatchRepository;
+    private final ImsMasterBatchRepository imsMasterBatchRepository;
     private final AuditLogService auditLogService;
-    private final com.example.outletmanagement.integration.InventoryApiClient inventoryApiClient;
+    private final InventoryApiClient inventoryApiClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override

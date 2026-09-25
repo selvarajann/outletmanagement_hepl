@@ -4,12 +4,27 @@ const URL = "/api/v1/warehouse-products";
 
 export const GetWarehouseProducts = async (params, signal) => {
   const res = await api.get(URL, { params, signal });
-  const data = res.data; 
-  return { products: data.content, totalPages: data.totalPages, currentPage: data.number };
+  // Controller now wraps in ApiResponse: { success, message, data: Page }
+  const page = res.data.data;
+  return {
+    products: page?.content || [],
+    totalPages: page?.totalPages || 0,
+    currentPage: page?.number || 0,
+    totalElements: page?.totalElements || 0,
+  };
 };
 
-export const CreateWarehouseProduct = async (data, signal) => api.post(URL, data, { signal });
+export const CreateWarehouseProduct = async (data, signal) => {
+  const res = await api.post(URL, data, { signal });
+  return res.data;
+};
 
-export const UpdateWarehouseProduct = async (id, data, signal) => api.put(`${URL}/${id}`, data, { signal });
+export const UpdateWarehouseProduct = async (id, data, signal) => {
+  const res = await api.put(`${URL}/${id}`, data, { signal });
+  return res.data;
+};
 
-export const DeleteWarehouseProduct = async (id, signal) => api.delete(`${URL}/${id}`, { signal });
+export const DeleteWarehouseProduct = async (id, signal) => {
+  const res = await api.delete(`${URL}/${id}`, { signal });
+  return res.data;
+};

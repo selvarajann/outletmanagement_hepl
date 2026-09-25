@@ -14,6 +14,7 @@ import ImportExportBar from "../components/shared/ImportExportBar";
 import { C } from "../theme/colors";
 import usePaginatedFetch from "../hooks/usePaginatedFetch";
 import { useQueryClient } from "@tanstack/react-query";
+import StatusChip from "../components/shared/StatusChip";
 import { invalidateMaster } from "../hooks/useMasterData";
 
 const emptyForm = { name: "" };
@@ -94,6 +95,18 @@ export default function Location() {
     }
   };
 
+  const handleBulkDelete = async (ids) => {
+    
+    try {
+      await Promise.all(ids.map(id => DeleteLocation(id)));
+      toast.success(`${ids.length} locations deleted!`);
+      refetch();
+      invalidateMaster(queryClient, "locations");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete locations");
+    }
+  };
+
   const cards = [
     { title: "Total Locations",  value: loading ? "—" : locations.length, icon: <LocationOnIcon />, color: C.blue },
     { title: "Filtered Results", value: loading ? "—" : locations.length, icon: <LocationOnIcon />, color: C.teal },
@@ -143,7 +156,7 @@ export default function Location() {
         ))}
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
-      {!loading && <LocationTable locations={locations} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
+      {!loading && <LocationTable locations={locations} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onBulkDelete={handleBulkDelete} />}
       <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <LocationForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
 

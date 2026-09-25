@@ -25,6 +25,7 @@ const FormDialog = memo(({ open, onClose, onSubmit, title, submitLabel, children
       maxWidth={maxWidth}
       fullWidth
       PaperProps={paperProps}
+      disableEnforceFocus
     >
       {/* ── Header ── */}
       <Box

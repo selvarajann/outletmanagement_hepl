@@ -1,23 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
-
-const ThemeContext = createContext();
-
-export const useAppTheme = () => useContext(ThemeContext);
+import { useSelector } from 'react-redux';
 
 export const AppThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('appTheme');
-    return saved === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDark(prev => {
-      const nextTheme = !prev;
-      localStorage.setItem('appTheme', nextTheme ? 'dark' : 'light');
-      return nextTheme;
-    });
-  };
+  const isDark = useSelector((state) => state.theme.isDark);
 
   useEffect(() => {
     if (isDark) {
@@ -46,6 +32,16 @@ export const AppThemeProvider = ({ children }) => {
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     },
     components: {
+      MuiDialog: {
+        defaultProps: {
+          disableEnforceFocus: true,
+        },
+      },
+      MuiModal: {
+        defaultProps: {
+          disableEnforceFocus: true,
+        },
+      },
       MuiPaper: {
         styleOverrides: {
           root: {
@@ -57,12 +53,9 @@ export const AppThemeProvider = ({ children }) => {
   }), [isDark]);
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-      <ThemeProvider theme={muiTheme}>
-        {/* CssBaseline normalizes MUI components background based on palette */}
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
-    </ThemeContext.Provider>
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      {children}
+    </ThemeProvider>
   );
 };

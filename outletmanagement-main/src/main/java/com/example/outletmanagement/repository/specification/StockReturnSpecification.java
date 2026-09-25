@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
+import com.example.outletmanagement.model.enums.StockReturnStatus;
 public class StockReturnSpecification {
 
     public static Specification<StockReturn> hasKeyword(String keyword) {
@@ -31,7 +32,7 @@ public class StockReturnSpecification {
         return (root, query, builder) -> {
             if (!StringUtils.hasText(status)) return null;
             try {
-                return builder.equal(root.get("status"), com.example.outletmanagement.model.enums.StockReturnStatus.valueOf(status.toUpperCase()));
+                return builder.equal(root.get("status"), StockReturnStatus.valueOf(status.toUpperCase()));
             } catch (IllegalArgumentException e) {
                 return null;
             }

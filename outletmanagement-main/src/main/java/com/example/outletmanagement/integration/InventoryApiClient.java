@@ -17,6 +17,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.example.outletmanagement.model.entity.StockReturn;
+import com.example.outletmanagement.model.enums.StockReturnStatus;
+import com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse;
+import com.example.outletmanagement.repository.StockReturnRepository;
 /**
  * Async HTTP client for communicating with the Inventory Management System.
  * <p>
@@ -31,7 +35,7 @@ public class InventoryApiClient {
 
     private final RestTemplate imsRestTemplate;
     private final StockOrderRepository stockOrderRepository;
-    private final com.example.outletmanagement.repository.StockReturnRepository stockReturnRepository;
+    private final StockReturnRepository stockReturnRepository;
 
     @Value("${ims.base-url:http://localhost:8081}")
     private String imsBaseUrl;
@@ -88,7 +92,7 @@ public class InventoryApiClient {
         dto.setPaymentMethod("CASH");
         dto.setOnlinePaymentOption("");
 
-        String endpoint = "https://flsrkbvh-8080.inc1.devtunnels.ms/api/v1/orders";
+        String endpoint = imsBaseUrl + "/api/v1/orders";
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -156,7 +160,7 @@ public class InventoryApiClient {
     }
 
     public java.util.Map<String, Integer> fetchWarehouseAvailabilityMap(String outletCode) {
-        String baseUrl = "https://flsrkbvh-8080.inc1.devtunnels.ms/api/v1";
+        String baseUrl = imsBaseUrl + "/api/v1";
         String endpoint = baseUrl + "/product?size=1000";
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -227,8 +231,8 @@ public class InventoryApiClient {
         return java.util.Collections.emptyMap();
     }
 
-    public java.util.List<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto> fetchFullWarehouseProducts(String outletCode) {
-        String baseUrl = "https://flsrkbvh-8080.inc1.devtunnels.ms/api/v1";
+    public java.util.List<WarehouseProductsResponse.ImsWarehouseProductDto> fetchFullWarehouseProducts(String outletCode) {
+        String baseUrl = imsBaseUrl + "/api/v1";
         String endpoint = baseUrl + "/product?size=1000";
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -264,7 +268,7 @@ public class InventoryApiClient {
                 }
 
                 if (dataList != null) {
-                    java.util.List<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto> products = new java.util.ArrayList<>();
+                    java.util.List<WarehouseProductsResponse.ImsWarehouseProductDto> products = new java.util.ArrayList<>();
                     for (Object listElement : dataList) {
                         if (listElement instanceof java.util.Map) {
                             java.util.Map<?, ?> item = (java.util.Map<?, ?>) listElement;
@@ -308,7 +312,7 @@ public class InventoryApiClient {
                             }
                             
                             if (id != null) {
-                                products.add(new com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto(
+                                products.add(new WarehouseProductsResponse.ImsWarehouseProductDto(
                                     id, code, name, price, qty
                                 ));
                             }
@@ -328,7 +332,7 @@ public class InventoryApiClient {
      */
     @Async("imsTaskExecutor")
     public void pushStockReturn(Long returnId) {
-        com.example.outletmanagement.model.entity.StockReturn stockReturn = stockReturnRepository.findById(returnId).orElse(null);
+        StockReturn stockReturn = stockReturnRepository.findById(returnId).orElse(null);
         if (stockReturn == null) {
             log.warn("[IMS] Cannot push return id={} — not found in DB", returnId);
             return;
@@ -353,7 +357,7 @@ public class InventoryApiClient {
 
             log.info("[IMS] Stock return pushed for return={} → HTTP {}", stockReturn.getReturnCode(), response.getStatusCode());
 
-            stockReturn.setStatus(com.example.outletmanagement.model.enums.StockReturnStatus.SUBMITTED);
+            stockReturn.setStatus(StockReturnStatus.SUBMITTED);
             stockReturnRepository.save(stockReturn);
 
         } catch (RestClientException ex) {
@@ -373,7 +377,7 @@ public class InventoryApiClient {
         // Implementation for sending receipt
     }
 
-    private ImsStockReturnDto buildReturnDto(com.example.outletmanagement.model.entity.StockReturn stockReturn) {
+    private ImsStockReturnDto buildReturnDto(StockReturn stockReturn) {
         List<ImsStockReturnDto.ImsReturnItemDto> items = stockReturn.getItems().stream()
                 .map(item -> new ImsStockReturnDto.ImsReturnItemDto(
                         item.getBatchItem().getProduct().getProductCode(),

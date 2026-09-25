@@ -9,7 +9,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DivisionResponse {
-    
    private Long id;
 private String name;
 private List<ProductResponse> products;

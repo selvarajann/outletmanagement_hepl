@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { GetProducts, DeleteProduct, UpdateProduct, CreateProduct, ImportProducts, UploadProductImage, ExportProducts, GetProductTemplate } from "../services/ProductService";
 import { Box, CircularProgress, Typography, Grid, Skeleton } from "@mui/material";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
@@ -16,6 +17,7 @@ import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import ImportExportBar from "../components/shared/ImportExportBar";
 import { C } from "../theme/colors";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import StatusChip from "../components/shared/StatusChip";
 import DebouncedSearchInput from "../components/common/DebouncedSearchInput";
 
 const emptyForm = { name: "", productCode: "", divisionId: "", uimPrice: "", mrp: "", sellingPrice: "", purchasePrice: "" };
@@ -113,12 +115,33 @@ export default function Product() {
     handleFilterChange({ ...filters, keyword });
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const handleOpen = (product = null) => {
     if (product) { setForm({ ...product, divisionId: product.divisionId || "" }); setSelectedId(product.id); }
     else { setForm(emptyForm); setSelectedId(null); }
     setErrors({});
     setOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      handleOpen();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("action");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const handleOpenModalEvent = (e) => {
+      if (e.detail === "CREATE_PRODUCT") {
+        handleOpen();
+      }
+    };
+    window.addEventListener("OPEN_MODAL", handleOpenModalEvent);
+    return () => window.removeEventListener("OPEN_MODAL", handleOpenModalEvent);
+  }, []);
 
   const handleClose = () => { setOpen(false); setForm(emptyForm); setErrors({}); setSelectedId(null); };
 
@@ -130,6 +153,16 @@ export default function Product() {
   };
 
   const handleDelete = (id) => deleteMutation.mutate(id);
+
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map(id => DeleteProduct(id)));
+      toast.success(`${ids.length} products deleted!`);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete products");
+    }
+  };
 
   const handleImageUpload = async (product, file) => {
     try {
@@ -195,7 +228,7 @@ export default function Product() {
         ))}
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
-      {!loading && <ProductTable products={products} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onImageUpload={handleImageUpload} />}
+      {!loading && <ProductTable products={products} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onImageUpload={handleImageUpload} onBulkDelete={handleBulkDelete} />}
       <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <ProductForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} loading={mutation.isPending} />
 

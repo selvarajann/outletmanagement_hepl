@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.outletmanagement.model.entity.Role;
 import com.example.outletmanagement.model.entity.User;
 import com.example.outletmanagement.model.enums.NotificationType;
 import com.example.outletmanagement.payload.dto.AuthDto.AuthResponse;
@@ -16,6 +17,13 @@ import com.example.outletmanagement.service.AuthService;
 import com.example.outletmanagement.service.EmailService;
 import com.example.outletmanagement.service.NotificationService;
 import com.example.outletmanagement.util.JwtUtil;
+
+import com.example.outletmanagement.payload.dto.AuthDto.ForgotPasswordRequest;
+import com.example.outletmanagement.payload.dto.AuthDto.ResetPasswordRequest;
+import com.example.outletmanagement.payload.dto.AuthDto.ChangePasswordRequest;
+import com.example.outletmanagement.model.entity.PasswordResetToken;
+import com.example.outletmanagement.repository.PasswordResetTokenRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +36,14 @@ public class AuthServiceImpl implements AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -51,9 +63,9 @@ public class AuthServiceImpl implements AuthService {
         login.setActive(true);
         if (request.getRole() != null) {
             try {
-                login.setRole(com.example.outletmanagement.model.entity.Role.valueOf(request.getRole()));
+                login.setRole(Role.valueOf(request.getRole()));
             } catch(Exception e) {
-                login.setRole(com.example.outletmanagement.model.entity.Role.SUPER_ADMIN);
+                login.setRole(Role.SUPER_ADMIN);
             }
         }
         login.setCreatedAt(LocalDateTime.now());
@@ -163,5 +175,59 @@ public class AuthServiceImpl implements AuthService {
             // Token invalid or expired
         }
         throw new RuntimeException("Invalid refresh token");
+    }
+
+    @Override
+    @Transactional
+    public void processForgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+        
+        passwordResetTokenRepository.findByUser(user).ifPresent(passwordResetTokenRepository::delete);
+
+        String token = java.util.UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(token, user, LocalDateTime.now().plusMinutes(15));
+        passwordResetTokenRepository.save(resetToken);
+
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+    }
+
+    @Override
+    @Transactional
+    public void processResetPassword(ResetPasswordRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new RuntimeException("Token has expired");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(resetToken);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String tokenHeader, ChangePasswordRequest request) {
+        if (tokenHeader == null || !tokenHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid token header");
+        }
+        String token = tokenHeader.substring(7);
+        String username = jwtUtil.extractUsername(token);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Old password does not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
     }
 }

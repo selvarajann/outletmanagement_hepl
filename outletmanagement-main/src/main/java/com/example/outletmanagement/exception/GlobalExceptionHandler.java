@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.outletmanagement.payload.response.ApiResponse;
 
+import com.example.outletmanagement.exception.IdempotencyException;
+import com.example.outletmanagement.exception.InsufficientStockException;
+import com.example.outletmanagement.exception.RateLimitExceededException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -43,9 +46,9 @@ public class GlobalExceptionHandler {
      * HTTP 429 — Rate Limit Exceeded.
      * Sets the {@code Retry-After} header so clients know when to retry.
      */
-    @ExceptionHandler(com.example.outletmanagement.exception.RateLimitExceededException.class)
+    @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ApiResponse<Object>> handleRateLimit(
-            com.example.outletmanagement.exception.RateLimitExceededException ex,
+            RateLimitExceededException ex,
             jakarta.servlet.http.HttpServletResponse response) {
         logger.warn("Rate limit exceeded: {}", ex.getMessage());
         response.setHeader("Retry-After", String.valueOf(ex.getRetryAfterSeconds()));
@@ -60,9 +63,9 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(false, ex.getMessage(), null));
     }
 
-    @ExceptionHandler(com.example.outletmanagement.exception.InsufficientStockException.class)
+    @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ApiResponse<Object>> handleInsufficientStock(
-            com.example.outletmanagement.exception.InsufficientStockException ex) {
+            InsufficientStockException ex) {
         logger.warn("Insufficient stock: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(new ApiResponse<>(false, ex.getMessage(), null));
@@ -75,8 +78,8 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(false, "Cannot perform this action because the record is referenced by other modules (e.g., existing stock or orders).", null));
     }
 
-    @ExceptionHandler(com.example.outletmanagement.exception.IdempotencyException.class)
-    public ResponseEntity<ApiResponse<Object>> handleIdempotencyException(com.example.outletmanagement.exception.IdempotencyException ex) {
+    @ExceptionHandler(IdempotencyException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIdempotencyException(IdempotencyException ex) {
         logger.warn("Idempotency conflict: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ApiResponse<>(false, ex.getMessage(), null));

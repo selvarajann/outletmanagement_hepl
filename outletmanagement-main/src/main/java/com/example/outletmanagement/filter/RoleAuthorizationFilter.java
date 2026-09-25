@@ -32,9 +32,9 @@ public class RoleAuthorizationFilter implements Filter {
 
         // Extract username from JWT and store as request attribute for AuditInterceptor
         String authHeader = httpRequest.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
             try {
-                String token = authHeader.substring(7);
+                String token = authHeader.substring(7).trim();
                 String username = jwtUtil.extractUsername(token);
                 if (username != null) {
                     // Set attribute so AuditInterceptor can read the authenticated username
@@ -80,13 +80,41 @@ public class RoleAuthorizationFilter implements Filter {
             }
         }
 
-        // Restrict warehouse products to INVENTORY_MANAGER only
+        // Warehouse products: GET is allowed for SUPER_ADMIN, OUTLET_MANAGER, and INVENTORY_MANAGER
+        // Write operations (POST, PUT, DELETE) are restricted to INVENTORY_MANAGER only
         if (path.startsWith("/api/v1/warehouse-products")) {
+            String method = httpRequest.getMethod();
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
                 try {
                     String role = jwtUtil.extractRole(token);
-                    if (!"INVENTORY_MANAGER".equals(role)) {
+                    boolean isReadOnly = "GET".equalsIgnoreCase(method);
+                    boolean isAllowed = "INVENTORY_MANAGER".equals(role)
+                            || (isReadOnly && ("SUPER_ADMIN".equals(role) || "OUTLET_MANAGER".equals(role)));
+                    if (!isAllowed) {
+                        httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        httpResponse.getWriter().write("{\"success\":false,\"message\":\"Access Denied: Insufficient permissions\"}");
+                        return;
+                    }
+                } catch (Exception e) {
+                    httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    httpResponse.getWriter().write("{\"success\":false,\"message\":\"Invalid Token\"}");
+                    return;
+                }
+            } else {
+                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                httpResponse.getWriter().write("{\"success\":false,\"message\":\"Missing Token\"}");
+                return;
+            }
+        }
+
+        // Restrict IMS portal to INVENTORY_MANAGER only
+        if (path.startsWith("/api/ims-portal")) {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                try {
+                    String role = jwtUtil.extractRole(token);
+                    if (!"INVENTORY_MANAGER".equals(role) && !"SUPER_ADMIN".equals(role)) {
                         httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         httpResponse.getWriter().write("{\"success\":false,\"message\":\"Access Denied: Requires INVENTORY_MANAGER role\"}");
                         return;
@@ -102,7 +130,7 @@ public class RoleAuthorizationFilter implements Filter {
                 return;
             }
         }
-        
+
         chain.doFilter(request, response);
     }
 }

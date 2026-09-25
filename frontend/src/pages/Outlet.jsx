@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { GetOutlets, DeleteOutlet, UpdateOutlet, CreateOutlet } from "../services/OutletService";
 import { invalidateMaster } from "../hooks/useMasterData";
@@ -17,6 +18,7 @@ import PageHeader from "../components/shared/PageHeader";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import { C } from "../theme/colors";
 import usePaginatedFetch from "../hooks/usePaginatedFetch";
+import StatusChip from "../components/shared/StatusChip";
 
 const emptyForm = { outletName: "", locationId: "", outletType: "", ownerName: "", address: "", divisionIds: [], productIds: [] };
 const emptyFilters = { keyword: "", locationId: "", divisionId: "", outletType: "" };
@@ -64,6 +66,8 @@ export default function Outlet() {
     debounceTimer.current = setTimeout(() => { if (page !== 0) setPage(0); setDebouncedFilters(newFilters); }, 500);
   }, [page]);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const handleOpen = (outlet = null) => {
     if (outlet) {
       setForm({ outletName: outlet.outletName, locationId: outlet.locationId || "", outletType: outlet.outletType, ownerName: outlet.ownerName, address: outlet.address, divisionIds: outlet.divisions?.map((d) => d.id) || [], productIds: outlet.divisions?.flatMap((d) => d.products?.map((p) => p.id) || []) || [] });
@@ -72,6 +76,25 @@ export default function Outlet() {
     setErrors({});
     setOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      handleOpen();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("action");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const handleOpenModalEvent = (e) => {
+      if (e.detail === "CREATE_OUTLET") {
+        handleOpen();
+      }
+    };
+    window.addEventListener("OPEN_MODAL", handleOpenModalEvent);
+    return () => window.removeEventListener("OPEN_MODAL", handleOpenModalEvent);
+  }, []);
 
   const handleClose = () => { setOpen(false); setForm(emptyForm); setErrors({}); setSelectedId(null); };
 
@@ -94,11 +117,22 @@ export default function Outlet() {
   const handleDelete = async (id) => {
     abortRef.current?.abort();
     abortRef.current = new AbortController();
-    const { signal } = abortRef.current;
     try {
       await DeleteOutlet(id); toast.success("Outlet deleted!"); refetch(); invalidateMaster(queryClient, "outlets");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete outlet");
+    }
+  };
+
+  const handleBulkDelete = async (ids) => {
+    
+    try {
+      await Promise.all(ids.map(id => DeleteOutlet(id)));
+      toast.success(`${ids.length} outlets deleted!`);
+      refetch();
+      invalidateMaster(queryClient, "outlets");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete outlets");
     }
   };
 
@@ -125,7 +159,7 @@ export default function Outlet() {
       </Grid>
       <OutletFilter filters={filters} onChange={handleFilterChange} />
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
-      {!loading && <OutletTable outlets={outlets} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
+      {!loading && <OutletTable outlets={outlets} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onBulkDelete={handleBulkDelete} />}
       <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <OutletForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
 

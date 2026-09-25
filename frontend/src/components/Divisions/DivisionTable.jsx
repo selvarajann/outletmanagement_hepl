@@ -3,9 +3,10 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EnterpriseTable from "../shared/EnterpriseTable";
+import StatusChip from "../shared/StatusChip";
 import { C } from "../../theme/colors";
 
-export default function DivisionTable({ divisions, onEdit, onDelete, onView }) {
+export default function DivisionTable({ divisions, onEdit, onDelete, onView, onBulkDelete }) {
   const columns = [
     { label: "#", render: (_, i) => <Chip label={i + 1} size="small" sx={{ backgroundColor: C.slateLight, color: C.slate, fontWeight: 700, fontSize: 11, borderRadius: 1, minWidth: 28 }} /> },
     { label: "Division", render: (d) => (
@@ -38,5 +39,5 @@ export default function DivisionTable({ divisions, onEdit, onDelete, onView }) {
     )},
   ];
 
-  return <EnterpriseTable columns={columns} data={divisions} emptyMessage="No divisions found" />;
+  return <EnterpriseTable columns={columns} data={divisions} emptyMessage="No divisions found" onBulkDelete={onBulkDelete} />;
 }

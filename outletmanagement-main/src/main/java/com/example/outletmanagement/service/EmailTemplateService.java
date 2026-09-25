@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import com.example.outletmanagement.model.entity.SaleTransaction;
+import com.example.outletmanagement.model.entity.SaleTransactionItem;
 @Service
 public class EmailTemplateService {
 
@@ -113,15 +115,15 @@ public class EmailTemplateService {
     }
 
     /** Daily Sales Report HTML generator */
-    public String dailySalesReport(java.util.List<com.example.outletmanagement.model.entity.SaleTransaction> sales, java.time.LocalDate date) {
+    public String dailySalesReport(java.util.List<SaleTransaction> sales, java.time.LocalDate date) {
         java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO;
         int totalItems = 0;
         int totalTransactions = sales.size();
 
-        for (com.example.outletmanagement.model.entity.SaleTransaction sale : sales) {
+        for (SaleTransaction sale : sales) {
             totalRevenue = totalRevenue.add(sale.getTotalAmount());
             if (sale.getItems() != null) {
-                totalItems += sale.getItems().stream().mapToInt(com.example.outletmanagement.model.entity.SaleTransactionItem::getQuantityDeducted).sum();
+                totalItems += sale.getItems().stream().mapToInt(SaleTransactionItem::getQuantityDeducted).sum();
             }
         }
 
@@ -152,7 +154,7 @@ public class EmailTemplateService {
         content.append("</thead>");
         content.append("<tbody>");
 
-        for (com.example.outletmanagement.model.entity.SaleTransaction sale : sales) {
+        for (SaleTransaction sale : sales) {
             String outletName = sale.getOutlet() != null ? sale.getOutlet().getOutletName() : "Unknown";
             content.append("<tr>");
             content.append("<td style='padding:12px; border-bottom:1px solid #e2e8f0'>").append(sale.getReferenceNo()).append("</td>");

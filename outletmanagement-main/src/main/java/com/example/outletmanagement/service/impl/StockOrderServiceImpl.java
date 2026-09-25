@@ -38,6 +38,9 @@ import com.example.outletmanagement.specification.StockOrderSpecification;
 
 import lombok.RequiredArgsConstructor;
 
+import com.example.outletmanagement.model.enums.ProductStatus;
+import com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse;
+import com.example.outletmanagement.repository.OutletDivisionProductRepository;
 @Service
 @RequiredArgsConstructor
 public class StockOrderServiceImpl implements StockOrderService {
@@ -46,7 +49,7 @@ public class StockOrderServiceImpl implements StockOrderService {
     private final StockOrderItemRepository stockOrderItemRepository;
     private final OutletRepository outletRepository;
     private final ProductRepository productRepository;
-    private final com.example.outletmanagement.repository.OutletDivisionProductRepository outletDivisionProductRepository;
+    private final OutletDivisionProductRepository outletDivisionProductRepository;
     private final BatchService batchService;
     private final NotificationService notificationService;
     private final InventoryApiClient inventoryApiClient;
@@ -63,7 +66,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         order.setOrderCode("SO-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + seq);
         order.setOutlet(outlet);
         order.setRequestedDate(request.getRequestedDate());
-        order.setStatus("PENDING_IMS");
+        order.setStatus("PENDING");
         order.setNotes(request.getNotes());
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
@@ -85,45 +88,17 @@ public class StockOrderServiceImpl implements StockOrderService {
             return item;
         }).collect(Collectors.toList());
 
-        // Validate against IMS warehouse (non-blocking if IMS is down)
-        String outletCode = outlet.getOutletCode();
-        if (outletCode != null && !outletCode.isEmpty()) {
-            Map<String, Integer> imsAvailability = inventoryApiClient.fetchWarehouseAvailabilityMap(outletCode);
-            if (!imsAvailability.isEmpty()) {
-                for (StockOrderItem item : items) {
-                    String productCode = item.getProduct().getProductCode();
-                    int available = imsAvailability.getOrDefault(productCode, 0);
-                    if (available < item.getQuantityRequested()) {
-                        throw new IllegalArgumentException(
-                            "Product " + productCode + " requested " + item.getQuantityRequested()
-                            + " but only " + available + " available in IMS warehouse.");
-                    }
-                }
-            }
-        }
-
         order.setItems(items);
         StockOrder saved = stockOrderRepository.save(order);
         
-        // Notify Admins and Inventory Managers
         String ownerName = saved.getCreatedBy();
         if (ownerName == null || ownerName.isEmpty()) {
             ownerName = "System";
         }
-        String msg = String.format("New stock order #%d placed by %s for outlet %s", 
+        String msg = String.format("New stock order #%d placed by %s for outlet %s",
                 saved.getId(), ownerName, saved.getOutlet().getOutletName());
         notificationService.sendToRole("SUPER_ADMIN", NotificationType.STOCK_ORDER_CREATED, "New Stock Order", msg);
         notificationService.sendToRole("INVENTORY_MANAGER", NotificationType.STOCK_ORDER_CREATED, "New Stock Order", msg);
-
-        // Async: push to Inventory Management System (non-blocking) ONLY AFTER COMMIT!
-        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-            new org.springframework.transaction.support.TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    inventoryApiClient.pushStockRequest(saved.getId());
-                }
-            }
-        );
 
         // ── Mailtrap Email ──────────────────────────────────────────────────
         BigDecimal totalAmount = saved.getItems().stream()
@@ -172,8 +147,8 @@ public class StockOrderServiceImpl implements StockOrderService {
     public StockOrderResponse updateOrder(Long id, StockOrderRequest request) {
         StockOrder order = stockOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING_IMS".equals(order.getStatus())) {
-            throw new RuntimeException("Can only update PENDING_IMS orders");
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new RuntimeException("Can only update PENDING orders");
         }
 
         Outlet outlet = outletRepository.findById(request.getOutletId())
@@ -212,18 +187,32 @@ public class StockOrderServiceImpl implements StockOrderService {
 
     @Override
     @Transactional
+    public StockOrderResponse payOrder(Long id) {
+        StockOrder order = stockOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        if ("PAID".equals(order.getPaymentStatus())) {
+            throw new RuntimeException("Order is already paid");
+        }
+        
+        order.setPaymentStatus("PAID");
+        order.setPaymentMethod("ONLINE");
+        order.setUpdatedAt(LocalDateTime.now());
+        StockOrder saved = stockOrderRepository.save(order);
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
     public StockOrderResponse requestCancelOrder(Long id) {
         StockOrder order = stockOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING_IMS".equals(order.getStatus())) {
-            throw new RuntimeException("Only PENDING_IMS orders can be requested for cancellation");
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new RuntimeException("Only PENDING orders can be requested for cancellation");
         }
         order.setStatus("CANCEL_REQUESTED");
         order.setUpdatedAt(LocalDateTime.now());
         StockOrder saved = stockOrderRepository.save(order);
-
-        // Call IMS to request cancel
-        inventoryApiClient.pushCancelRequest(saved.getId());
 
         // Notify the user who created the order
         String orderOwner = saved.getCreatedBy();
@@ -246,8 +235,8 @@ public class StockOrderServiceImpl implements StockOrderService {
     public void deleteOrder(Long id) {
         StockOrder order = stockOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!"PENDING_IMS".equals(order.getStatus())) {
-            throw new RuntimeException("Only PENDING_IMS orders can be deleted");
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new RuntimeException("Only PENDING orders can be deleted");
         }
         stockOrderRepository.delete(order);
     }
@@ -280,6 +269,8 @@ public class StockOrderServiceImpl implements StockOrderService {
         response.setImsPushStatus(order.getImsPushStatus());
         response.setNotes(order.getNotes());
         response.setCreatedBy(order.getCreatedBy());
+        response.setPaymentMethod(order.getPaymentMethod());
+        response.setPaymentStatus(order.getPaymentStatus());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
 
@@ -308,7 +299,7 @@ public class StockOrderServiceImpl implements StockOrderService {
     }
 
     @Override
-    public com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse getWarehouseProducts(Long outletId) {
+    public WarehouseProductsResponse getWarehouseProducts(Long outletId) {
         try {
             Outlet outlet = outletRepository.findById(outletId)
                     .orElseThrow(() -> new RuntimeException("Outlet not found"));
@@ -318,25 +309,25 @@ public class StockOrderServiceImpl implements StockOrderService {
                 outletCode = "";
             }
 
-            List<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto> productDtos = 
+            List<WarehouseProductsResponse.ImsWarehouseProductDto> productDtos = 
                     inventoryApiClient.fetchFullWarehouseProducts(outletCode);
 
             // JIT Sync: Ensure IMS products exist in local DB and return local IDs
-            List<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse.ImsWarehouseProductDto> syncedDtos = new java.util.ArrayList<>();
+            List<WarehouseProductsResponse.ImsWarehouseProductDto> syncedDtos = new java.util.ArrayList<>();
             java.util.Set<Long> seenIds = new java.util.HashSet<>();
             for (var dto : productDtos) {
                 if (dto.getProductCode() == null || dto.getProductCode().isEmpty()) continue;
                 
-                com.example.outletmanagement.model.entity.Products localP = productRepository.findByProductCode(dto.getProductCode()).orElse(null);
+                Products localP = productRepository.findByProductCode(dto.getProductCode()).orElse(null);
                 if (localP == null) {
-                    localP = new com.example.outletmanagement.model.entity.Products();
+                    localP = new Products();
                     localP.setProductCode(dto.getProductCode());
                     localP.setName(dto.getName() != null && !dto.getName().isEmpty() ? dto.getName() : dto.getProductCode());
                     localP.setUimPrice(dto.getSellingPrice());
                     localP.setMrp(dto.getSellingPrice());
                     localP.setSellingPrice(dto.getSellingPrice());
                     localP.setPurchasePrice(dto.getSellingPrice());
-                    localP.setStatus(com.example.outletmanagement.model.enums.ProductStatus.ACTIVE);
+                    localP.setStatus(ProductStatus.ACTIVE);
                     localP = productRepository.save(localP);
                 } else {
                     boolean changed = false;
@@ -360,7 +351,7 @@ public class StockOrderServiceImpl implements StockOrderService {
             }
 
             boolean imsAvailable = !syncedDtos.isEmpty();
-            return new com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse(imsAvailable, syncedDtos);
+            return new WarehouseProductsResponse(imsAvailable, syncedDtos);
         } catch (Exception ex) {
             try {
                 java.io.StringWriter sw = new java.io.StringWriter();
@@ -377,5 +368,79 @@ public class StockOrderServiceImpl implements StockOrderService {
     @Override
     public void syncOrdersFromIms() {
         // TODO: Implement external sync
+    }
+
+    @Override
+    public byte[] generateBill(Long id) {
+        StockOrder order = stockOrderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!"PAID".equals(order.getPaymentStatus())) {
+            throw new RuntimeException("Bill can only be generated for PAID orders");
+        }
+
+        BigDecimal total = order.getItems().stream()
+                .map(i -> i.getUnitPriceAtOrder().multiply(BigDecimal.valueOf(i.getQuantityRequested())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        StringBuilder rows = new StringBuilder();
+        int sno = 1;
+        for (StockOrderItem item : order.getItems()) {
+            BigDecimal lineTotal = item.getUnitPriceAtOrder()
+                    .multiply(BigDecimal.valueOf(item.getQuantityRequested()));
+            rows.append("<tr>")
+                .append("<td>").append(sno++).append("</td>")
+                .append("<td>").append(item.getProduct().getName()).append("</td>")
+                .append("<td>").append(item.getProduct().getProductCode()).append("</td>")
+                .append("<td style='text-align:center'>").append(item.getQuantityRequested()).append("</td>")
+                .append("<td style='text-align:right'>&#8377;").append(item.getUnitPriceAtOrder().toPlainString()).append("</td>")
+                .append("<td style='text-align:right'>&#8377;").append(lineTotal.toPlainString()).append("</td>")
+                .append("</tr>");
+        }
+
+        String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/>"
+            + "<title>Invoice " + order.getOrderCode() + "</title>"
+            + "<style>"
+            + "body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:40px;color:#1e293b;background:#f8fafc}"
+            + ".card{background:#fff;border-radius:12px;padding:40px;max-width:800px;margin:auto;box-shadow:0 4px 24px rgba(0,0,0,.08)}"
+            + ".header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0ea5e9;padding-bottom:24px;margin-bottom:24px}"
+            + ".logo{font-size:24px;font-weight:800;color:#0ea5e9}"
+            + ".invoice-title{font-size:32px;font-weight:800;color:#1e293b;margin:0}"
+            + ".meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}"
+            + ".meta-box{background:#f1f5f9;border-radius:8px;padding:14px}"
+            + ".meta-label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}"
+            + ".meta-value{font-size:15px;font-weight:700;color:#1e293b}"
+            + "table{width:100%;border-collapse:collapse;margin-bottom:24px}"
+            + "th{background:#0ea5e9;color:#fff;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase}"
+            + "td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px}"
+            + "tr:last-child td{border-bottom:none}"
+            + "tr:nth-child(even){background:#f8fafc}"
+            + ".total-row{background:#0ea5e9!important;color:#fff;font-weight:700;font-size:15px}"
+            + ".total-row td{color:#fff;border:none}"
+            + ".badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}"
+            + ".badge-paid{background:#dcfce7;color:#16a34a}"
+            + ".footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px}"
+            + "</style></head><body>"
+            + "<div class='card'>"
+            + "<div class='header'>"
+            + "<div><div class='logo'>OutletMS</div><div style='font-size:12px;color:#64748b;margin-top:4px'>Outlet Management System</div></div>"
+            + "<div style='text-align:right'><div class='invoice-title'>INVOICE</div>"
+            + "<div style='font-size:13px;color:#64748b;margin-top:4px'>" + order.getOrderCode() + "</div></div>"
+            + "</div>"
+            + "<div class='meta'>"
+            + "<div class='meta-box'><div class='meta-label'>Outlet</div><div class='meta-value'>" + order.getOutlet().getOutletName() + "</div></div>"
+            + "<div class='meta-box'><div class='meta-label'>Order Date</div><div class='meta-value'>" + order.getRequestedDate() + "</div></div>"
+            + "<div class='meta-box'><div class='meta-label'>Payment Method</div><div class='meta-value'>" + (order.getPaymentMethod() != null ? order.getPaymentMethod() : "N/A") + "</div></div>"
+            + "<div class='meta-box'><div class='meta-label'>Payment Status</div><div class='meta-value'><span class='badge badge-paid'>PAID</span></div></div>"
+            + "</div>"
+            + "<table><thead><tr><th>#</th><th>Product</th><th>Code</th><th style='text-align:center'>Qty</th><th style='text-align:right'>Unit Price</th><th style='text-align:right'>Line Total</th></tr></thead>"
+            + "<tbody>" + rows + "</tbody>"
+            + "<tfoot><tr class='total-row'><td colspan='5' style='text-align:right;font-weight:800;font-size:15px'>GRAND TOTAL</td>"
+            + "<td style='text-align:right;font-size:16px;font-weight:800'>&#8377;" + total.toPlainString() + "</td></tr></tfoot>"
+            + "</table>"
+            + "<div class='footer'>Thank you for your business! &bull; Generated on " + java.time.LocalDateTime.now().toString().replace("T", " ").substring(0, 19) + "</div>"
+            + "</div></body></html>";
+
+        return html.getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 }

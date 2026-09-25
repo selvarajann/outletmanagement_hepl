@@ -10,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import com.example.outletmanagement.interceptor.ApiDeprecationInterceptor;
 import com.example.outletmanagement.interceptor.AuditInterceptor;
 
+import com.example.outletmanagement.interceptor.IdempotencyInterceptor;
 /**
  * Spring MVC configuration.
  * <p>
@@ -27,7 +28,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired private AuditInterceptor auditInterceptor;
     @Autowired private ApiDeprecationInterceptor apiDeprecationInterceptor;
-    @Autowired private com.example.outletmanagement.interceptor.IdempotencyInterceptor idempotencyInterceptor;
+    @Autowired private IdempotencyInterceptor idempotencyInterceptor;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

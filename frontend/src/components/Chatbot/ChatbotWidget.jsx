@@ -130,24 +130,50 @@ const ChatbotWidget = () => {
 
       if (res.data.type === "NAVIGATION" && res.data.metadata) {
         try {
-          const meta = JSON.parse(res.data.metadata);
+          const meta = typeof res.data.metadata === "string" ? JSON.parse(res.data.metadata) : res.data.metadata;
           if (meta.page) {
             navigate(meta.page);
           }
         } catch(e) {}
       } else if (res.data.type === "OPEN_MODAL" && res.data.metadata) {
         try {
-          const meta = JSON.parse(res.data.metadata);
-          if (meta.modal) {
-            window.dispatchEvent(new CustomEvent("OPEN_MODAL", { detail: meta.modal }));
+          const meta = typeof res.data.metadata === "string" ? JSON.parse(res.data.metadata) : res.data.metadata;
+          const modalName = meta.modal || meta.page || "";
+          
+          let targetPath = null;
+          if (modalName === "CREATE_STOCK_ORDER" || meta.page === "/stock-orders") {
+            targetPath = "/stock-orders?action=create";
+          } else if (modalName === "CREATE_PRODUCT" || meta.page === "/products") {
+            targetPath = "/products?action=create";
+          } else if (modalName === "CREATE_OUTLET" || meta.page === "/outlets") {
+            targetPath = "/outlets?action=create";
+          } else if (modalName === "CREATE_BATCH" || meta.page === "/batches") {
+            targetPath = "/batches?action=create";
+          } else if (modalName === "CREATE_STOCK_RETURN" || meta.page === "/stock-returns") {
+            targetPath = "/stock-returns?action=create";
+          } else if (modalName === "CREATE_USER" || meta.page === "/users") {
+            targetPath = "/users?action=create";
+          } else if (modalName === "CREATE_LOCATION" || meta.page === "/locations") {
+            targetPath = "/locations?action=create";
+          } else if (modalName === "CREATE_DIVISION" || meta.page === "/divisions") {
+            targetPath = "/divisions?action=create";
+          } else if (meta.page) {
+            targetPath = meta.page;
           }
+
+          if (targetPath) {
+            navigate(targetPath);
+          }
+
+          window.dispatchEvent(new CustomEvent("OPEN_MODAL", { detail: modalName }));
         } catch(e) {}
       }
     } catch (err) {
       console.error("Failed to send message", err);
+      setActiveConversationId(null);
       setMessages((prev) => [
         ...prev,
-        { role: "SYSTEM", content: "Sorry, I am unable to connect to the server at the moment." },
+        { role: "SYSTEM", content: "Sorry, I am unable to connect to the server at the moment. Please try again." },
       ]);
     } finally {
       setIsLoading(false);
@@ -189,6 +215,8 @@ const ChatbotWidget = () => {
       <Fade in={isOpen}>
         <Paper
           elevation={6}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           sx={{
             position: "fixed",
             bottom: 24,

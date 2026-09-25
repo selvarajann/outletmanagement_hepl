@@ -7,6 +7,7 @@ import com.example.outletmanagement.model.entity.Division;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 
+import com.example.outletmanagement.model.entity.Products;
 public class DivisionSpecification {
 
     public static Specification<Division> searchAndFilter(String keyword, Boolean hasProducts) {
@@ -20,7 +21,7 @@ public class DivisionSpecification {
 
             if (hasProducts != null) {
                 Subquery<Long> sub = query.subquery(Long.class);
-                var productRoot = sub.from(com.example.outletmanagement.model.entity.Products.class);
+                var productRoot = sub.from(Products.class);
                 sub.select(cb.count(productRoot))
                    .where(cb.equal(productRoot.get("division"), root));
 

@@ -32,7 +32,7 @@ public class ImsWebhookController {
 
     private final ImsWebhookService imsWebhookService;
 
-    @Value("${ims.webhook-secret:oms-webhook-secret-2025}")
+    @Value("${ims.webhook-secret}")
     private String webhookSecret;
 
     @PostMapping("/dispatch")

@@ -45,6 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.contains("/api/v1/auth/validate") ||
             path.contains("/api/v1/auth/refresh") ||
             path.contains("/api/v1/auth/logout") ||
+            path.contains("/api/v1/auth/forgot-password") ||
+            path.contains("/api/v1/auth/reset-password") ||
             path.contains("/api/test-scheduler") ||
             path.contains("/api/webhook/ims/dispatch") ||
             path.contains("/swagger-ui") ||
@@ -62,8 +64,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
+        if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            token = authHeader.substring(7).trim();
             try {
                 username = jwtUtil.extractUsername(token);
             } catch (Exception e) {
@@ -77,6 +79,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (username != null && jwtUtil.validateToken(token, username)) {
+            request.setAttribute("authenticatedUsername", username);
             filterChain.doFilter(request, response);
         } else {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

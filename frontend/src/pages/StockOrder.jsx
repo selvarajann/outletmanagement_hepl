@@ -1,4 +1,5 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box, CircularProgress, Typography, Chip, Grid, Skeleton } from "@mui/material";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -12,29 +13,25 @@ import StockOrderTable from "../components/StockOrders/StockOrderTable";
 import StockOrderPagination from "../components/StockOrders/StockOrderPagination";
 import StockOrderForm from "../components/StockOrders/StockOrderForm";
 import StockOrderItemsDialog from "../components/StockOrders/StockOrderItemsDialog";
+import PaymentDialog from "../components/StockOrders/PaymentDialog";
 import ViewDialog, { ViewRow } from "../components/shared/ViewDialog";
 import {
   GetStockOrders, CreateStockOrder, UpdateStockOrder,
-  DeleteStockOrder, GetStockOrderById, RetryImsPush, RequestCancelStockOrder
+  DeleteStockOrder, GetStockOrderById, RequestCancelStockOrder,
+  PayStockOrder, DownloadBill
 } from "../services/StockOrderService";
 import usePaginatedFetch from "../hooks/usePaginatedFetch";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 import { C } from "../theme/colors";
 
 const emptyFilters = { keyword: "", outletId: "", status: "", fromDate: "", toDate: "" };
-const emptyForm = { outletId: "", requestedDate: new Date().toISOString().split("T")[0], notes: "", items: [] };
+const emptyForm = { outletId: "", requestedDate: new Date().toISOString().split("T")[0], notes: "", items: [], paymentMethod: "", paymentStatus: "UNPAID" };
 
 const statusColors = {
   PENDING:   { bg: "#fff7ed", text: "#9a3412" },
   APPROVED:  { bg: "#ecfdf5", text: "#047857" },
   CANCELLED: { bg: "#fef2f2", text: "#b91c1c" },
   FULFILLED: { bg: "#f0fdfa", text: "#0f766e" },
-};
-
-const imsColors = {
-  PENDING:          { bg: "#f1f5f9", text: "#475569" },
-  IMS_PUSHED:       { bg: "#ecfdf5", text: "#047857" },
-  IMS_PUSH_FAILED:  { bg: "#fef2f2", text: "#b91c1c" },
 };
 
 export default function StockOrder() {
@@ -50,6 +47,8 @@ export default function StockOrder() {
   const [itemsDialogOrder, setItemsDialogOrder] = useState(null);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, type: "", id: null });
+  const [paymentOrder, setPaymentOrder] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const fetchStockOrders = useCallback((params, signal) => GetStockOrders(params, signal), []);
   const fetchOptions = useMemo(() => ({ page, filters: debouncedFilters }), [page, debouncedFilters]);
@@ -65,19 +64,41 @@ export default function StockOrder() {
     const e = {};
     if (!form.outletId) e.outletId = "Required";
     if (!form.requestedDate) e.requestedDate = "Required";
+    if (!form.paymentMethod) e.paymentMethod = "Required";
     if (!form.items || form.items.length === 0) e.items = "Add at least one item";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const handleOpen = (row = null) => {
     if (row) {
       setSelectedId(row.id);
-      setForm({ outletId: row.outletId || "", requestedDate: row.requestedDate || new Date().toISOString().split("T")[0], notes: row.notes || "", items: row.items?.map((i) => ({ productId: i.productId || "", quantityRequested: i.quantityRequested || 1, unitPrice: i.unitPriceAtOrder || 0 })) || [] });
+      setForm({ outletId: row.outletId || "", requestedDate: row.requestedDate || new Date().toISOString().split("T")[0], notes: row.notes || "", paymentMethod: row.paymentMethod || "", paymentStatus: row.paymentStatus || "UNPAID", items: row.items?.map((i) => ({ productId: i.productId || "", quantityRequested: i.quantityRequested || 1, unitPrice: i.unitPriceAtOrder || 0 })) || [] });
     } else { setSelectedId(null); setForm({ ...emptyForm, items: [] }); }
     setErrors({});
     setOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      handleOpen();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("action");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const handleOpenModalEvent = (e) => {
+      if (e.detail === "CREATE_STOCK_ORDER") {
+        handleOpen();
+      }
+    };
+    window.addEventListener("OPEN_MODAL", handleOpenModalEvent);
+    return () => window.removeEventListener("OPEN_MODAL", handleOpenModalEvent);
+  }, []);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -94,6 +115,17 @@ export default function StockOrder() {
 
   const requestCancel = useCallback((id) => setConfirmState({ open: true, type: "CANCEL", id }), []);
   const requestDelete = useCallback((id) => setConfirmState({ open: true, type: "DELETE", id }), []);
+
+  const handleBulkDelete = async (ids) => {
+    
+    try {
+      await Promise.all(ids.map(id => DeleteStockOrder(id)));
+      toast.success(`${ids.length} orders deleted!`);
+      refetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete orders");
+    }
+  };
 
   const executeConfirmAction = useCallback(async () => {
     const { type, id } = confirmState;
@@ -124,13 +156,27 @@ export default function StockOrder() {
     finally { setItemsLoading(false); }
   };
 
-  const handleRetryIms = async (id) => {
+
+  const handleConfirmPay = async (id) => {
+    setPaymentLoading(true);
     try {
-      await RetryImsPush(id);
-      toast.success("Retry IMS push triggered successfully");
+      await PayStockOrder(id);
+      toast.success("Payment confirmed!");
+      setPaymentOrder(null);
       refetch();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to retry IMS push");
+      toast.error(err.response?.data?.message || "Payment failed");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleDownloadBill = async (id) => {
+    try {
+      await DownloadBill(id);
+      toast.success("Bill generated successfully");
+    } catch (err) {
+      toast.error("Failed to download bill");
     }
   };
 
@@ -166,7 +212,7 @@ export default function StockOrder() {
         <Box display="flex" justifyContent="center" py={10}><CircularProgress /></Box>
       ) : rows?.length > 0 ? (
         <>
-          <StockOrderTable orders={rows} onEdit={handleOpen} onDelete={requestDelete} onCancel={requestCancel} onView={setViewItem} onViewItems={handleViewItems} onRetryIms={handleRetryIms} />
+          <StockOrderTable orders={rows} onEdit={handleOpen} onDelete={requestDelete} onCancel={requestCancel} onView={setViewItem} onViewItems={handleViewItems} onPay={setPaymentOrder} onDownloadBill={handleDownloadBill} onBulkDelete={handleBulkDelete} />
           <StockOrderPagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       ) : (
@@ -191,7 +237,11 @@ export default function StockOrder() {
             <ViewRow label="Outlet"        value={viewItem.outletName} />
             <ViewRow label="Requested Date" value={viewItem.requestedDate} />
             <ViewRow label="Status"        value={<Chip label={viewItem.status} size="small" sx={{ fontWeight: 700, fontSize: 11, backgroundColor: sc.bg, color: sc.text }} />} />
-            <ViewRow label="IMS Status"    value={(() => { const ic = imsColors[viewItem.imsPushStatus] || imsColors.PENDING; return <Chip label={viewItem.imsPushStatus || "PENDING"} size="small" sx={{ fontWeight: 700, fontSize: 11, backgroundColor: ic.bg, color: ic.text }} />; })()} />
+            <ViewRow label="Payment Method" value={viewItem.paymentMethod} />
+            <ViewRow label="Payment Status" value={(() => { 
+                const pc = viewItem.paymentStatus === 'PAID' ? { bg: '#ecfdf5', text: '#047857' } : viewItem.paymentStatus === 'PARTIAL' ? { bg: '#fff7ed', text: '#9a3412' } : { bg: '#fef2f2', text: '#b91c1c' };
+                return <Chip label={viewItem.paymentStatus || 'UNPAID'} size="small" sx={{ fontWeight: 700, fontSize: 11, backgroundColor: pc.bg, color: pc.text }} />; 
+              })()} />
             <ViewRow label="Total Amount"  value={<Typography sx={{ fontWeight: 700, color: C.blue }}>₹{viewItem.totalAmount?.toLocaleString()}</Typography>} />
             <ViewRow label="Items Count"   value={viewItem.itemCount} />
             {viewItem.notes && <ViewRow label="Notes" value={viewItem.notes} />}
@@ -211,6 +261,7 @@ export default function StockOrder() {
         onConfirm={executeConfirmAction}
         onClose={() => setConfirmState({ open: false, type: "", id: null })}
       />
+      <PaymentDialog open={!!paymentOrder} order={paymentOrder} onClose={() => setPaymentOrder(null)} onConfirm={handleConfirmPay} loading={paymentLoading} />
     </Box>
   );
 }

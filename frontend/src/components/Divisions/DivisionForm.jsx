@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TextField, FormControl, FormHelperText, Box, Typography, Checkbox, Avatar, Dialog, DialogContent, Button } from "@mui/material";
+import { TextField, FormControl, FormHelperText, Box, Typography, Checkbox, Avatar, Dialog, DialogContent, Button, FormControlLabel, Switch } from "@mui/material";
 import { toast } from "react-toastify";
 import { GetProducts } from "../../services/ProductService";
 import FormDialog from "../shared/FormDialog";
@@ -82,6 +82,7 @@ export default function DivisionForm({ open, form, setForm, errors = {}, setErro
             sx={{ ...fieldSx, cursor: "pointer" }} />
           {errors.productIds && <FormHelperText>{errors.productIds}</FormHelperText>}
         </FormControl>
+
       </FormDialog>
 
       <SubDialog open={productDialog} onClose={() => setProductDialog(false)} title="Select Products"

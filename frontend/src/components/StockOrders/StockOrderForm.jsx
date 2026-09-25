@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import {
   Box, TextField, MenuItem, Select, InputLabel, FormControl,
-  IconButton, Button, Typography, Grid, Divider
+  IconButton, Button, Typography, Grid, Divider, CircularProgress
 } from "@mui/material";
 import { toast } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import FormDialog from "../shared/FormDialog";
-import { GetWarehouseProducts } from "../../services/StockOrderService";
+import { GetWarehouseProducts } from "../../services/WarehouseProductService";
 import { useOutlets } from "../../hooks/useMasterData";
 import { C } from "../../theme/colors";
 
@@ -16,20 +16,25 @@ const fieldSx = { "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 } 
 export default function StockOrderForm({ open, form, setForm, errors, selectedId, onClose, onSubmit }) {
   const { outlets } = useOutlets();
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [imsAvailable, setImsAvailable] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(false);
 
-  // Load products when outletId changes
+  // Load warehouse products once when form opens
   useEffect(() => {
-    if (!form.outletId) { setAvailableProducts([]); return; }
+    if (!open) return;
     const controller = new AbortController();
-    GetWarehouseProducts(form.outletId, controller.signal)
+    setProductsLoading(true);
+    GetWarehouseProducts({ size: 1000 }, controller.signal)
       .then((r) => {
         setAvailableProducts(r.products || []);
-        setImsAvailable(r.imsAvailable);
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (err?.name !== "CanceledError" && err?.code !== "ERR_CANCELED") {
+          toast.error("Failed to load warehouse products");
+        }
+      })
+      .finally(() => setProductsLoading(false));
     return () => controller.abort();
-  }, [form.outletId]);
+  }, [open]);
 
   const handleAddItem = () =>
     setForm({ ...form, items: [...form.items, { productId: "", quantityRequested: 1, unitPrice: 0 }] });
@@ -52,16 +57,6 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
     if (value !== raw) { toast.warn("Quantity must be a whole number"); }
     const qty = parseInt(raw) || 1;
     if (qty < 1) { toast.warn("Quantity must be at least 1"); return; }
-
-    const item = form.items[index];
-    if (imsAvailable && item.productId) {
-      const prod = availableProducts.find((p) => String(p.id) === String(item.productId));
-      if (prod && qty > prod.availableQuantity) {
-        toast.warn(`Only ${prod.availableQuantity} available in IMS warehouse`);
-        return;
-      }
-    }
-
     handleItemChange(index, "quantityRequested", qty);
   };
 
@@ -113,6 +108,26 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
           />
         </Grid>
 
+        {/* PAYMENT METHOD */}
+        <Grid item xs={6}>
+          <FormControl fullWidth size="small" sx={fieldSx} error={!!errors.paymentMethod}>
+            <InputLabel>Payment Method</InputLabel>
+            <Select
+              value={form.paymentMethod || ""}
+              label="Payment Method"
+              onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+            >
+              <MenuItem value="CASH">Cash</MenuItem>
+              <MenuItem value="CARD">Card</MenuItem>
+              <MenuItem value="BANK_TRANSFER">Bank Transfer</MenuItem>
+              <MenuItem value="ONLINE">Online</MenuItem>
+            </Select>
+            {errors.paymentMethod && <Typography variant="caption" color="error">{errors.paymentMethod}</Typography>}
+          </FormControl>
+        </Grid>
+
+
+
         {/* NOTES */}
         <Grid item xs={12}>
           <TextField fullWidth label="Notes" multiline rows={2} size="small" sx={fieldSx}
@@ -121,16 +136,7 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
           />
         </Grid>
 
-        {/* IMS WARNING BANNER */}
-        {!imsAvailable && (
-          <Grid item xs={12}>
-            <Box sx={{ p: 1.5, backgroundColor: C.amberLight, borderRadius: 2, border: `1px solid ${C.amberMid}` }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#d97706" }}>
-                ⚠️ IMS Warehouse is currently unavailable. Showing local catalog. Stock availability cannot be guaranteed.
-              </Typography>
-            </Box>
-          </Grid>
-        )}
+
 
         {/* PRODUCTS SECTION */}
         <Grid item xs={12}>
@@ -156,11 +162,19 @@ export default function StockOrderForm({ open, form, setForm, errors, selectedId
                   label="Product"
                   onChange={(e) => handleItemChange(index, "productId", e.target.value)}
                 >
-                  {availableProducts.map((p) => (
-                    <MenuItem key={p.id} value={String(p.id)}>
-                      {p.name} ({p.productCode}) {imsAvailable ? `- ${p.availableQuantity} in stock` : ''}
+                  {productsLoading ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={16} sx={{ mr: 1 }} /> Loading products…
                     </MenuItem>
-                  ))}
+                  ) : availableProducts.length === 0 ? (
+                    <MenuItem disabled>No warehouse products found</MenuItem>
+                  ) : (
+                    availableProducts.map((p) => (
+                      <MenuItem key={p.id} value={String(p.id)}>
+                        {p.name} ({p.productCode})
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
 

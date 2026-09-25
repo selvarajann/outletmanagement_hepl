@@ -1,6 +1,6 @@
 import React from 'react';
 import { LinearProgress, Box } from '@mui/material';
-import { useGlobalLoader } from '../../context/GlobalLoaderContext';
+import { useGlobalLoader } from '../../hooks/useGlobalLoader';
 
 const GlobalLoader = () => {
   const { isLoading } = useGlobalLoader();

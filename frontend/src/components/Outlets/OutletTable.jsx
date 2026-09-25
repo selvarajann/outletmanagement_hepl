@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EnterpriseTable from "../shared/EnterpriseTable";
+import StatusChip from "../shared/StatusChip";
 import { C } from "../../theme/colors";
 
 const TYPE_COLORS = {
@@ -12,7 +13,7 @@ const TYPE_COLORS = {
   Warehouse: { bg: C.amberLight, color: C.amber },
 };
 
-export default function OutletTable({ outlets, onEdit, onDelete, onView }) {
+export default function OutletTable({ outlets, onEdit, onDelete, onView, onBulkDelete }) {
   const columns = [
     { label: "Outlet", render: (o) => (
       <Box display="flex" alignItems="center" gap={1.5}>
@@ -46,5 +47,5 @@ export default function OutletTable({ outlets, onEdit, onDelete, onView }) {
     )},
   ];
 
-  return <EnterpriseTable columns={columns} data={outlets} emptyMessage="No outlets found" />;
+  return <EnterpriseTable columns={columns} data={outlets} emptyMessage="No outlets found" onBulkDelete={onBulkDelete} />;
 }

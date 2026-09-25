@@ -138,7 +138,7 @@ const Dashboard = () => {
           mb: 3,
           borderRadius: "16px",
           border: `1px solid ${C.border}`,
-          background: `linear-gradient(135deg, ${C.surface} 0%, color-mix(in srgb, ${C.surface} 80%, ${C.navy}) 100%)`,
+          backgroundColor: C.white,
           p: { xs: 2.5, sm: 3 },
           position: "relative", overflow: "hidden",
           boxShadow: "0 2px 12px rgba(37,99,235,0.06)",

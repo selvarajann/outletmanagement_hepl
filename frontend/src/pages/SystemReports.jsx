@@ -47,7 +47,7 @@ const SystemReports = () => {
           variant="outlined"
           size="small"
           startIcon={<DownloadIcon />}
-          href={`http://localhost:8080${row.fileUrl}`}
+          href={`${import.meta.env.VITE_API_BASE_URL.replace('/api/v1', '')}${row.fileUrl}`}
           target="_blank"
           rel="noopener noreferrer"
           sx={{ textTransform: "none", borderRadius: 2 }}

@@ -40,7 +40,7 @@ public class ImpersonationServiceImpl implements ImpersonationService {
             throw new IllegalStateException("Admin is already impersonating a user. End current session first.");
         });
 
-        com.example.outletmanagement.model.entity.User targetUser = userRepository.findById(targetUserId)
+        User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + targetUserId));
 
         if (!targetUser.isActive()) {

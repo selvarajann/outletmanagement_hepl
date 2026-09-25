@@ -72,7 +72,7 @@ public class SarvamAiServiceImpl implements SarvamAiService {
                 .model("sarvam-105b") // or sarvam-30b based on requirements
                 .messages(messages)
                 .temperature(0.7)
-                .max_tokens(1000)
+                .max_tokens(4096)
                 .top_p(0.9)
                 .build();
 
@@ -96,6 +96,11 @@ public class SarvamAiServiceImpl implements SarvamAiService {
             if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
                 String content = response.getChoices().get(0).getMessage().getContent();
                 if (content == null || content.isEmpty()) {
+                    // Fallback to reasoning_content if content is null (happens with some models if interrupted)
+                    String reasoning = response.getChoices().get(0).getMessage().getReasoning_content();
+                    if (reasoning != null && !reasoning.isEmpty()) {
+                        return reasoning;
+                    }
                     return "Sorry for inconvenience, try a different way.";
                 }
                 return content;
@@ -113,13 +118,14 @@ public class SarvamAiServiceImpl implements SarvamAiService {
         List<SarvamMessage> messages = new ArrayList<>();
         messages.add(SarvamMessage.builder()
                 .role("system")
-                .content("You are a strict JSON-only Intent Analyzer for the Outlet Management System. Classify the user message into one of these intents: GET_PRODUCTS, GET_OUTLET_STOCK, GET_PENDING_ORDERS, GET_BATCHES, GET_DASHBOARD_STATS, GET_LOW_STOCK, GET_EXPIRING_BATCHES, NAVIGATION, OPEN_MODAL, GENERAL, UNKNOWN.\n" +
+                .content("You are a strict JSON-only Intent Analyzer for the Outlet Management System. Classify the user message into one of these intents: GET_PRODUCTS, GET_OUTLET_STOCK, GET_PENDING_ORDERS, GET_BATCHES, GET_DASHBOARD_STATS, GET_LOW_STOCK, GET_EXPIRING_BATCHES, NAVIGATION, OPEN_MODAL, GREETING, GENERAL, UNKNOWN.\n" +
                          "CRITICAL RULES:\n" +
-                         "1. If the user asks to go, navigate, or open a page (e.g. 'go to products', 'open orders page'), return exactly: {\"type\": \"NAVIGATION\", \"page\": \"/path\"} (Paths: /products, /outlets, /batches, /stock-orders).\n" +
-                         "2. If the user explicitly expresses intent to CREATE, ADD, or INITIATE a new entity (e.g., 'I want to create a stock order', 'add new product'), you MUST classify this as OPEN_MODAL and return exactly: {\"type\": \"OPEN_MODAL\", \"modal\": \"CREATE_STOCK_ORDER\"} (or relevant modal name).\n" +
-                         "3. If the user asks for data (e.g., 'what products are there', 'show low stock items', 'dashboard summary'), return exactly: {\"type\": \"INTENT\", \"intent\": \"THE_INTENT_NAME\"} (e.g., GET_DASHBOARD_STATS, GET_LOW_STOCK, GET_EXPIRING_BATCHES, GET_PRODUCTS).\n" +
-                         "4. If the user types something extremely short, ambiguous, or just asks for help (e.g., 'hi', 'help', 'what can you do', 'asdf'), return exactly: {\"type\": \"UNKNOWN\"}.\n" +
-                         "5. If none match but it is a valid domain question, return {\"type\": \"GENERAL\"}.\n" +
+                         "1. If the user greets or asks for capabilities/help (e.g. 'hi', 'hai', 'hello', 'hey', 'help', 'what can you do'), return exactly: {\"type\": \"GREETING\"}.\n" +
+                         "2. If the user asks to go, navigate, or open a page (e.g. 'go to products', 'open orders page', 'outlets'), return exactly: {\"type\": \"NAVIGATION\", \"page\": \"/path\"} (Paths: /products, /outlets, /batches, /stock-orders, /analytics, /stock-returns).\n" +
+                         "3. If the user expresses intent to CREATE, ADD, or INITIATE a new entity (e.g., 'I want to create a stock order', 'create stock order', 'add new product'), return exactly: {\"type\": \"OPEN_MODAL\", \"modal\": \"CREATE_STOCK_ORDER\"} (or CREATE_PRODUCT, CREATE_OUTLET, CREATE_BATCH, CREATE_STOCK_RETURN).\n" +
+                         "4. If the user asks for data (e.g., 'what products are there', 'show low stock items', 'dashboard summary'), return exactly: {\"type\": \"INTENT\", \"intent\": \"THE_INTENT_NAME\"} (e.g., GET_DASHBOARD_STATS, GET_LOW_STOCK, GET_EXPIRING_BATCHES, GET_PRODUCTS).\n" +
+                         "5. If user message is unrecognized random gibberish (e.g. 'asdfgh', '123123'), return exactly: {\"type\": \"UNKNOWN\"}.\n" +
+                         "6. If none match but it is a valid domain question, return {\"type\": \"GENERAL\"}.\n" +
                          "DO NOT output any reasoning, markdown, or text. ONLY output the raw JSON object.")
                 .build());
 
@@ -132,7 +138,7 @@ public class SarvamAiServiceImpl implements SarvamAiService {
                 .model("sarvam-105b")
                 .messages(messages)
                 .temperature(0.1) // Low temperature for deterministic output
-                .max_tokens(1500)
+                .max_tokens(150)
                 .top_p(0.9)
                 .build();
 

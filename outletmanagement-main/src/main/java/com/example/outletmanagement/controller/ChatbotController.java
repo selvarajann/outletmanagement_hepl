@@ -33,10 +33,17 @@ public class ChatbotController {
     private final JwtUtil jwtUtil;
 
     private String extractUsername(HttpServletRequest request) {
+        String attrUser = (String) request.getAttribute("authenticatedUsername");
+        if (attrUser != null && !attrUser.isBlank()) {
+            return attrUser;
+        }
+
         String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            return jwtUtil.extractUsername(token);
+        if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            String token = authHeader.substring(7).trim();
+            try {
+                return jwtUtil.extractUsername(token);
+            } catch (Exception ignored) {}
         }
         throw new RuntimeException("Unauthorized: No valid token found");
     }

@@ -59,6 +59,12 @@ public class StockOrder {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Column(name = "payment_method")
+    private String paymentMethod;
+
+    @Column(name = "payment_status")
+    private String paymentStatus = "UNPAID";
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<StockOrderItem> items;

@@ -1,13 +1,32 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Divider, IconButton, Table, TableHead, TableRow, TableCell, TableBody, Chip, CircularProgress } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Divider, IconButton, Chip, CircularProgress } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { C } from "../../theme/colors";
-
-const cellSx = { fontSize: 12, py: 1.2, px: 1.5, borderBottom: `1px solid ${C.border}` };
+import EnterpriseTable from "../shared/EnterpriseTable";
 
 export default function BatchItemsDialog({ open, onClose, batch, loading }) {
   const items = batch?.items || [];
   const totalValue = items.reduce((sum, i) => sum + (parseFloat(i.lineTotal) || 0), 0);
   const totalProfit = items.reduce((sum, i) => sum + (parseFloat(i.lineProfit) || 0), 0);
+
+  const columns = [
+    { label: "#", render: (item, idx) => <Typography sx={{ fontSize: 12 }}>{idx + 1}</Typography> },
+    { label: "Product", render: (item) => (
+      <Box>
+        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography>
+        <Typography variant="caption" color="textSecondary">{item.productCode}</Typography>
+      </Box>
+    ) },
+    { label: "Division", render: (item) => <Chip label={item.divisionName || "—"} size="small" sx={{ fontSize: 10, backgroundColor: C.slateLight, color: C.slate }} /> },
+    { label: "Qty", render: (item) => <Typography sx={{ fontSize: 12 }}>{item.quantity}</Typography> },
+    { label: "Remaining", render: (item) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: item.remainingQuantity === 0 ? C.red : C.emerald }}>{item.remainingQuantity ?? "—"}</Typography> },
+    { label: "Mfg Date", render: (item) => <Typography sx={{ fontSize: 12 }}>{item.mfgDate || "—"}</Typography> },
+    { label: "Expiry Date", render: (item) => <Typography sx={{ fontSize: 12, fontWeight: 600, color: item.expiryDate ? C.amber : C.muted }}>{item.expiryDate || "—"}</Typography> },
+    { label: "MRP", render: (item) => <Typography sx={{ fontSize: 12 }}>₹{parseFloat(item.mrp || 0).toLocaleString()}</Typography> },
+    { label: "Purchase", render: (item) => <Typography sx={{ fontSize: 12 }}>₹{parseFloat(item.purchasePrice || 0).toLocaleString()}</Typography> },
+    { label: "Selling", render: (item) => <Typography sx={{ fontSize: 12 }}>₹{parseFloat(item.sellingPrice || 0).toLocaleString()}</Typography> },
+    { label: "Line Total", render: (item) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: C.blue }}>₹{parseFloat(item.lineTotal || 0).toLocaleString()}</Typography> },
+    { label: "Profit", render: (item) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: parseFloat(item.lineProfit) >= 0 ? C.emerald : C.red }}>₹{parseFloat(item.lineProfit || 0).toLocaleString()}</Typography> },
+  ];
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth
@@ -30,50 +49,9 @@ export default function BatchItemsDialog({ open, onClose, batch, loading }) {
       <DialogContent sx={{ px: 3, py: 2.5 }}>
         {loading ? (
           <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} /></Box>
-        ) : items.length === 0 ? (
-          <Box py={4} textAlign="center">
-            <Typography variant="body2" color="textSecondary">No items found</Typography>
-          </Box>
         ) : (
           <>
-            <Table size="small" sx={{ border: `1px solid ${C.border}`, borderRadius: 2, overflow: "hidden" }}>
-              <TableHead sx={{ backgroundColor: C.navy }}>
-                <TableRow>
-                  {["#", "Product", "Division", "Qty", "Remaining", "Mfg Date", "Expiry Date", "MRP", "Purchase", "Selling", "Line Total", "Profit"].map((h) => (
-                    <TableCell key={h} sx={{ ...cellSx, color: "#94a3b8", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.7, borderBottom: "none" }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((item, idx) => (
-                  <TableRow key={item.id ?? idx} sx={{ "&:hover": { backgroundColor: "#f8fafc" } }}>
-                    <TableCell sx={cellSx}>{idx + 1}</TableCell>
-                    <TableCell sx={cellSx}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography>
-                      <Typography variant="caption" color="textSecondary">{item.productCode}</Typography>
-                    </TableCell>
-                    <TableCell sx={cellSx}>
-                      <Chip label={item.divisionName || "—"} size="small" sx={{ fontSize: 10, backgroundColor: C.slateLight, color: C.slate }} />
-                    </TableCell>
-                    <TableCell sx={cellSx}>{item.quantity}</TableCell>
-                    <TableCell sx={{ ...cellSx, fontWeight: 700, color: item.remainingQuantity === 0 ? C.red : C.emerald }}>
-                      {item.remainingQuantity ?? "—"}
-                    </TableCell>
-                    <TableCell sx={cellSx}>{item.mfgDate || "—"}</TableCell>
-                    <TableCell sx={{ ...cellSx, fontWeight: 600, color: item.expiryDate ? C.amber : C.muted }}>
-                      {item.expiryDate || "—"}
-                    </TableCell>
-                    <TableCell sx={cellSx}>₹{parseFloat(item.mrp || 0).toLocaleString()}</TableCell>
-                    <TableCell sx={cellSx}>₹{parseFloat(item.purchasePrice || 0).toLocaleString()}</TableCell>
-                    <TableCell sx={cellSx}>₹{parseFloat(item.sellingPrice || 0).toLocaleString()}</TableCell>
-                    <TableCell sx={{ ...cellSx, fontWeight: 700, color: C.blue }}>₹{parseFloat(item.lineTotal || 0).toLocaleString()}</TableCell>
-                    <TableCell sx={{ ...cellSx, fontWeight: 700, color: parseFloat(item.lineProfit) >= 0 ? C.emerald : C.red }}>
-                      ₹{parseFloat(item.lineProfit || 0).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <EnterpriseTable columns={columns} data={items} emptyMessage="No items found" />
             <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
               <Box sx={{ p: 1.5, backgroundColor: C.tealLight, borderRadius: 2, border: "1px solid #ccfbf1", minWidth: 180, textAlign: "right" }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: C.teal }}>TOTAL BATCH VALUE</Typography>

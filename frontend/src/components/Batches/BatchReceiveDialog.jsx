@@ -1,7 +1,6 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Box, Typography, Divider, IconButton,
-  Table, TableHead, TableRow, TableCell, TableBody,
   TextField, Alert
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -9,8 +8,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { toast } from "react-toastify";
 import { C } from "../../theme/colors";
+import EnterpriseTable from "../shared/EnterpriseTable";
 
-const cellSx = { fontSize: 12, py: 1.2, px: 1.5, borderBottom: `1px solid ${C.border}` };
 const dateSx = {
   "& .MuiOutlinedInput-root": { borderRadius: 1.5, fontSize: 12, height: 34 },
   "& .MuiInputLabel-root": { fontSize: 12 },
@@ -43,6 +42,43 @@ export default function BatchReceiveDialog({ open, batch, dateMap, setDateMap, o
     onSubmit();
   };
 
+  const columns = [
+    { label: "#", render: (item, idx) => <Typography sx={{ fontSize: 12 }}>{idx + 1}</Typography> },
+    { label: "Product", render: (item) => <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography> },
+    { label: "Code", render: (item) => <Typography sx={{ fontSize: 12, color: C.slateMid, fontFamily: "monospace" }}>{item.productCode}</Typography> },
+    { label: "Qty", render: (item) => <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{item.quantity}</Typography> },
+    { label: "Mfg Date", render: (item) => {
+        const dates = dateMap[item.productId] || {};
+        return (
+          <TextField
+            type="date"
+            size="small"
+            value={dates.mfgDate || ""}
+            onChange={(e) => handleDateChange(item.productId, "mfgDate", e.target.value)}
+            sx={dateSx}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ max: new Date().toISOString().split("T")[0] }}
+          />
+        );
+      }
+    },
+    { label: "Expiry Date", render: (item) => {
+        const dates = dateMap[item.productId] || {};
+        return (
+          <TextField
+            type="date"
+            size="small"
+            value={dates.expiryDate || ""}
+            onChange={(e) => handleDateChange(item.productId, "expiryDate", e.target.value)}
+            sx={dateSx}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ min: new Date().toISOString().split("T")[0] }}
+          />
+        );
+      }
+    }
+  ];
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
       PaperProps={{ sx: { borderRadius: 3, border: `1px solid ${C.border}` } }}>
@@ -67,54 +103,7 @@ export default function BatchReceiveDialog({ open, batch, dateMap, setDateMap, o
           and products will be available for sale using <strong>FEFO</strong> (First Expiry First Out) order.
         </Alert>
 
-        <Table size="small" sx={{ border: `1px solid ${C.border}`, borderRadius: 2, overflow: "hidden" }}>
-          <TableHead sx={{ backgroundColor: C.navy }}>
-            <TableRow>
-              {["#", "Product", "Code", "Qty", "Mfg Date", "Expiry Date"].map((h) => (
-                <TableCell key={h} sx={{ ...cellSx, color: "#94a3b8", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.7, borderBottom: "none" }}>
-                  {h}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.map((item, idx) => {
-              const dates = dateMap[item.productId] || {};
-              return (
-                <TableRow key={item.id ?? idx} sx={{ "&:hover": { backgroundColor: "#f8fafc" } }}>
-                  <TableCell sx={cellSx}>{idx + 1}</TableCell>
-                  <TableCell sx={cellSx}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography>
-                  </TableCell>
-                  <TableCell sx={{ ...cellSx, color: C.slateMid, fontFamily: "monospace" }}>{item.productCode}</TableCell>
-                  <TableCell sx={{ ...cellSx, fontWeight: 700 }}>{item.quantity}</TableCell>
-                  <TableCell sx={cellSx}>
-                    <TextField
-                      type="date"
-                      size="small"
-                      value={dates.mfgDate || ""}
-                      onChange={(e) => handleDateChange(item.productId, "mfgDate", e.target.value)}
-                      sx={dateSx}
-                      InputLabelProps={{ shrink: true }}
-                      inputProps={{ max: new Date().toISOString().split("T")[0] }}
-                    />
-                  </TableCell>
-                  <TableCell sx={cellSx}>
-                    <TextField
-                      type="date"
-                      size="small"
-                      value={dates.expiryDate || ""}
-                      onChange={(e) => handleDateChange(item.productId, "expiryDate", e.target.value)}
-                      sx={dateSx}
-                      InputLabelProps={{ shrink: true }}
-                      inputProps={{ min: new Date().toISOString().split("T")[0] }}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <EnterpriseTable columns={columns} data={items} emptyMessage="No items to receive." />
 
         <Box display="flex" alignItems="center" gap={1} mt={2} sx={{ p: 1.5, backgroundColor: C.amberLight, borderRadius: 2, border: `1px solid ${C.amberMid}` }}>
           <CalendarTodayIcon sx={{ fontSize: 14, color: C.amber }} />

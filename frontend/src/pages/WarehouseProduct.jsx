@@ -127,6 +127,16 @@ export default function WarehouseProduct() {
 
   const handleDelete = (id) => deleteMutation.mutate(id);
 
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map(id => DeleteWarehouseProduct(id)));
+      toast.success(`${ids.length} products deleted!`);
+      queryClient.invalidateQueries({ queryKey: ['warehouseProducts'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete products");
+    }
+  };
+
   const totalSelling = products.reduce((s, p) => s + (p.sellingPrice || 0), 0);
   const totalPurchase = products.reduce((s, p) => s + (p.purchasePrice || 0), 0);
 
@@ -152,7 +162,7 @@ export default function WarehouseProduct() {
         ))}
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
-      {!loading && <ProductTable products={products} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
+      {!loading && <ProductTable products={products} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onBulkDelete={handleBulkDelete} />}
       <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <ProductForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} loading={mutation.isPending} />
 

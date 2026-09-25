@@ -3,7 +3,7 @@ import {
   Box, Grid, Skeleton, CircularProgress, Chip, Typography,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, MenuItem, Switch, FormControlLabel,
-  Divider, IconButton,
+  Divider, IconButton, Alert
 } from "@mui/material";
 import PeopleAltIcon      from "@mui/icons-material/PeopleAlt";
 import AdminPanelSettings from "@mui/icons-material/AdminPanelSettings";
@@ -44,7 +44,20 @@ const validate = (form, isEdit) => {
   if (!isEdit && !form.username.trim()) e.username = "Username is required";
   if (!form.email.trim()) e.email = "Email is required";
   else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email";
-  if (!isEdit && !form.password.trim()) e.password = "Password is required";
+  
+  if (!isEdit && !form.password.trim()) {
+    e.password = "Password is required";
+  } else if (form.password) {
+    const p = form.password;
+    if (p.length < 8) e.password = "Minimum 8 characters required";
+    else if (!/(?=.*[0-9])/.test(p)) e.password = "Must contain at least one number";
+    else if (!/(?=.*[a-z])/.test(p)) e.password = "Must contain at least one lowercase letter";
+    else if (!/(?=.*[A-Z])/.test(p)) e.password = "Must contain at least one uppercase letter";
+    else if (!/(?=.*[@#$%^&+=!_\-~`|/\\*"'?;:><.,\[\]{}()])/.test(p)) e.password = "Must contain at least one symbol";
+    else if (/(.)\1{2,}/.test(p)) e.password = "No 3 consecutive identical characters allowed";
+    else if (/123|abc|qwe|password/i.test(p)) e.password = "Common sequences are not allowed";
+  }
+
   if (!form.role) e.role = "Role is required";
   return e;
 };
@@ -168,8 +181,25 @@ export default function UserManagement() {
       toast.error(err.message || "Failed to deactivate");
     } finally {
       setUserToDeactivate(null);
+      setConfirmOpen(false);
     }
   }, [userToDeactivate, fetchUsers]);
+
+  const handleBulkDelete = useCallback(async (ids) => {
+    try {
+      await Promise.all(ids.map(async (id) => {
+        const userToDeactivate = users.find(u => u.id === id);
+        if (userToDeactivate) {
+          userToDeactivate.active = false;
+          await deleteUser(userToDeactivate);
+        }
+      }));
+      toast.success(`${ids.length} users deactivated!`);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message || "Failed to bulk deactivate users");
+    }
+  }, [users, fetchUsers]);
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const active        = useMemo(() => users.filter(u => u.active).length, [users]);
@@ -282,6 +312,7 @@ export default function UserManagement() {
           columns={columns}
           data={users}
           emptyMessage="No users found. Click 'Add User' to create one."
+          onBulkDelete={handleBulkDelete}
         />
       )}
 
@@ -323,6 +354,19 @@ export default function UserManagement() {
           fullWidth
           size="small"
         />
+        {(form.password || !editingId) && (
+          <Box mt={0.5} mb={0.5}>
+            <Alert severity="info" icon={false} sx={{ py: 0.5, px: 2, '& .MuiAlert-message': { width: '100%' }, backgroundColor: C.blueLight }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: C.blueDark }}>🔒 Four Pillars of Strong Passwords</Typography>
+              <Box component="ul" sx={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: C.slate }}>
+                <li><strong>Length:</strong> 8+ characters minimum</li>
+                <li><strong>Complexity:</strong> Mix of uppercase, lowercase, numbers, symbols</li>
+                <li><strong>Unpredictability:</strong> No common sequences or repeated characters</li>
+                <li><strong>Uniqueness:</strong> Different for every single account</li>
+              </Box>
+            </Alert>
+          </Box>
+        )}
         <TextField
           select
           label="Role"

@@ -14,6 +14,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(role || "SUPER_ADMIN")) {
+    if (role === "INVENTORY_MANAGER") {
+      return <Navigate to="/analytics" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -1,9 +1,9 @@
-import { Box, TextField, Typography, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material";
+import { Box, TextField, Typography } from "@mui/material";
 import { toast } from "react-toastify";
 import FormDialog from "../shared/FormDialog";
 import { C } from "../../theme/colors";
+import EnterpriseTable from "../shared/EnterpriseTable";
 
-const cellSx = { fontSize: 12, py: 1, px: 1, borderBottom: `1px solid ${C.border}` };
 const inputSx = { "& .MuiOutlinedInput-root": { borderRadius: 1.5, fontSize: 12, height: 32 } };
 
 export default function BatchPriceEditDialog({ open, batch, items, setItems, onClose, onSubmit }) {
@@ -19,6 +19,31 @@ export default function BatchPriceEditDialog({ open, batch, items, setItems, onC
     setItems(newItems);
   };
 
+  const columns = [
+    { label: "Product", render: (item) => (
+      <Box>
+        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography>
+        <Typography variant="caption" color="textSecondary">{item.productCode}</Typography>
+      </Box>
+    ) },
+    { label: "Qty", render: (item) => <Typography sx={{ fontSize: 12 }}>{item.quantity}</Typography> },
+    { label: "MRP", render: (item, index) => (
+        <TextField size="small" value={item.mrp} sx={inputSx} onChange={(e) => handlePriceChange(index, "mrp", e.target.value)} />
+    ) },
+    { label: "Purchase", render: (item, index) => (
+        <TextField size="small" value={item.purchasePrice} sx={inputSx} onChange={(e) => handlePriceChange(index, "purchasePrice", e.target.value)} />
+    ) },
+    { label: "Selling", render: (item, index) => (
+        <TextField size="small" value={item.sellingPrice} sx={inputSx} onChange={(e) => handlePriceChange(index, "sellingPrice", e.target.value)} />
+    ) },
+    { label: "UIM", render: (item, index) => (
+        <TextField size="small" value={item.uimPrice} sx={inputSx} onChange={(e) => handlePriceChange(index, "uimPrice", e.target.value)} />
+    ) },
+    { label: "Total", align: "right", render: (item) => (
+        <Typography sx={{ fontSize: 12, fontWeight: 700 }}>₹{(item.sellingPrice * item.quantity).toLocaleString()}</Typography>
+    ) }
+  ];
+
   return (
     <FormDialog open={open} title={`Edit Prices: ${batch?.batchCode}`} onClose={onClose} onSubmit={onSubmit} submitLabel="Save Prices" maxWidth="lg">
       <Box sx={{ mb: 2 }}>
@@ -29,49 +54,7 @@ export default function BatchPriceEditDialog({ open, batch, items, setItems, onC
         </Box>
       </Box>
 
-      <Table size="small" sx={{ border: `1px solid ${C.border}`, borderRadius: 2, overflow: "hidden" }}>
-        <TableHead sx={{ backgroundColor: "#f8fafc" }}>
-          <TableRow>
-            <TableCell sx={{ ...cellSx, fontWeight: 700 }}>Product</TableCell>
-            <TableCell sx={{ ...cellSx, fontWeight: 700, width: 60 }}>Qty</TableCell>
-            <TableCell sx={{ ...cellSx, fontWeight: 700, width: 100 }}>MRP</TableCell>
-            <TableCell sx={{ ...cellSx, fontWeight: 700, width: 100 }}>Purchase</TableCell>
-            <TableCell sx={{ ...cellSx, fontWeight: 700, width: 100 }}>Selling</TableCell>
-            <TableCell sx={{ ...cellSx, fontWeight: 700, width: 100 }}>UIM</TableCell>
-            <TableCell sx={{ ...cellSx, fontWeight: 700, width: 100, textAlign: "right" }}>Total</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, index) => (
-            <TableRow key={index}>
-              <TableCell sx={cellSx}>
-                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography>
-                <Typography variant="caption" color="textSecondary">{item.productCode}</Typography>
-              </TableCell>
-              <TableCell sx={cellSx}>{item.quantity}</TableCell>
-              <TableCell sx={cellSx}>
-                <TextField size="small" value={item.mrp} sx={inputSx}
-                  onChange={(e) => handlePriceChange(index, "mrp", e.target.value)} />
-              </TableCell>
-              <TableCell sx={cellSx}>
-                <TextField size="small" value={item.purchasePrice} sx={inputSx}
-                  onChange={(e) => handlePriceChange(index, "purchasePrice", e.target.value)} />
-              </TableCell>
-              <TableCell sx={cellSx}>
-                <TextField size="small" value={item.sellingPrice} sx={inputSx}
-                  onChange={(e) => handlePriceChange(index, "sellingPrice", e.target.value)} />
-              </TableCell>
-              <TableCell sx={cellSx}>
-                <TextField size="small" value={item.uimPrice} sx={inputSx}
-                  onChange={(e) => handlePriceChange(index, "uimPrice", e.target.value)} />
-              </TableCell>
-              <TableCell sx={{ ...cellSx, textAlign: "right", fontWeight: 700 }}>
-                ₹{(item.sellingPrice * item.quantity).toLocaleString()}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <EnterpriseTable columns={columns} data={items} emptyMessage="No items found." />
       
       <Box display="flex" justifyContent="flex-end" mt={2}>
         <Box sx={{ p: 1.5, backgroundColor: "#f0fdf4", borderRadius: 2, border: `1px solid #dcfce7`, minWidth: 200, textAlign: "right" }}>

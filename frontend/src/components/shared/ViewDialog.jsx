@@ -21,6 +21,7 @@ export default function ViewDialog({ open, onClose, title, children, maxWidth = 
           boxShadow: "0 20px 60px rgba(15,23,42,0.12), 0 4px 16px rgba(15,23,42,0.06)",
         },
       }}
+      disableEnforceFocus
     >
       {/* ── Header ── */}
       <Box

@@ -6,6 +6,7 @@ import {
   IconButton, CircularProgress, Alert, Stepper, Step, StepLabel,
   Table, TableHead, TableRow, TableCell, TableBody, Checkbox,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
 import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -78,14 +79,6 @@ export default function CreateReturnModal({ open, onClose, onSuccess }) {
   const handleClose = () => { reset(); onClose(); };
 
   // ── Step 1 helpers ──────────────────────────────────────────────────────────
-  const toggleItem = (item) => {
-    setSelectedItems((prev) => {
-      const copy = { ...prev };
-      if (copy[item.id]) { delete copy[item.id]; }
-      else { copy[item.id] = { qty: item.quantity, defect: '' }; }
-      return copy;
-    });
-  };
 
   const updateQty = (itemId, val) =>
     setSelectedItems((prev) => ({ ...prev, [itemId]: { ...prev[itemId], qty: Math.max(1, Number(val)) } }));
@@ -223,61 +216,95 @@ export default function CreateReturnModal({ open, onClose, onSuccess }) {
               ) : !batchDetail?.items?.length ? (
                 <Alert severity="warning" sx={{ borderRadius: 2 }}>This batch has no items.</Alert>
               ) : (
-                <Table size="small" sx={{ '& th': { fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', color: C.slateMid, bgcolor: C.bgMuted, py: 1.5 } }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell padding="checkbox" />
-                      <TableCell>Product</TableCell>
-                      <TableCell align="center">Available</TableCell>
-                      <TableCell align="center">Return Qty</TableCell>
-                      <TableCell>Defect Notes</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {batchDetail.items.map((item) => {
-                      const checked = !!selectedItems[item.id];
-                      return (
-                        <TableRow key={item.id} hover selected={checked}>
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              checked={checked}
-                              onChange={() => toggleItem(item)}
-                              sx={{ color: C.rose, '&.Mui-checked': { color: C.rose } }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography sx={{ fontWeight: 600, fontSize: 13, color: C.navy }}>{item.productName}</Typography>
-                            <Typography sx={{ fontSize: 11, color: C.slateMid }}>{item.productCode}</Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip label={item.quantity} size="small" sx={{ fontWeight: 700, bgcolor: C.blueLight, color: C.blue }} />
-                          </TableCell>
-                          <TableCell align="center">
+                <Box sx={{ height: 400, width: '100%', '& .MuiDataGrid-root': { border: 'none' } }}>
+                  <DataGrid
+                    rows={batchDetail.items}
+                    getRowId={(row) => row.id}
+                    checkboxSelection
+                    rowSelectionModel={Object.keys(selectedItems).map(Number)}
+                    onRowSelectionModelChange={(ids) => {
+                      const next = {};
+                      ids.forEach(id => {
+                        const item = batchDetail.items.find(i => i.id === id);
+                        if (selectedItems[id]) {
+                          next[id] = selectedItems[id];
+                        } else {
+                          next[id] = { qty: item.quantity, defect: '' };
+                        }
+                      });
+                      setSelectedItems(next);
+                    }}
+                    disableRowSelectionOnClick
+                    hideFooter
+                    columns={[
+                      { 
+                        field: 'productName', 
+                        headerName: 'Product', 
+                        flex: 1, 
+                        renderCell: (params) => (
+                          <Box display="flex" flexDirection="column" justifyContent="center">
+                            <Typography sx={{ fontWeight: 600, fontSize: 13, color: C.navy }}>{params.row.productName}</Typography>
+                            <Typography sx={{ fontSize: 11, color: C.slateMid }}>{params.row.productCode}</Typography>
+                          </Box>
+                        )
+                      },
+                      {
+                        field: 'quantity',
+                        headerName: 'Available',
+                        width: 100,
+                        align: 'center',
+                        headerAlign: 'center',
+                        renderCell: (params) => (
+                          <Chip label={params.value} size="small" sx={{ fontWeight: 700, bgcolor: C.blueLight, color: C.blue }} />
+                        )
+                      },
+                      {
+                        field: 'returnQty',
+                        headerName: 'Return Qty',
+                        width: 120,
+                        align: 'center',
+                        headerAlign: 'center',
+                        renderCell: (params) => {
+                          const checked = !!selectedItems[params.row.id];
+                          return (
                             <TextField
                               size="small"
                               type="number"
                               disabled={!checked}
-                              value={selectedItems[item.id]?.qty ?? item.quantity}
-                              onChange={(e) => updateQty(item.id, e.target.value)}
-                              inputProps={{ min: 1, max: item.quantity }}
+                              value={selectedItems[params.row.id]?.qty ?? params.row.quantity}
+                              onChange={(e) => updateQty(params.row.id, e.target.value)}
+                              inputProps={{ min: 1, max: params.row.quantity }}
                               sx={{ width: 72, '& input': { textAlign: 'center', fontWeight: 700, py: 0.5 } }}
                             />
-                          </TableCell>
-                          <TableCell>
+                          );
+                        }
+                      },
+                      {
+                        field: 'defect',
+                        headerName: 'Defect Notes',
+                        flex: 1,
+                        renderCell: (params) => {
+                          const checked = !!selectedItems[params.row.id];
+                          return (
                             <TextField
                               size="small"
                               disabled={!checked}
                               placeholder="Optional defect note…"
-                              value={selectedItems[item.id]?.defect ?? ''}
-                              onChange={(e) => updateDefect(item.id, e.target.value)}
+                              value={selectedItems[params.row.id]?.defect ?? ''}
+                              onChange={(e) => updateDefect(params.row.id, e.target.value)}
                               sx={{ width: '100%', '& input': { fontSize: 12 } }}
                             />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                          );
+                        }
+                      }
+                    ]}
+                    sx={{
+                      '& .MuiDataGrid-columnHeaders': { bgcolor: C.bgMuted, color: C.slateMid, textTransform: 'uppercase', fontSize: 11, fontWeight: 700, letterSpacing: '0.5px' },
+                      '& .MuiDataGrid-row': { borderBottom: `1px solid ${C.border}` },
+                      '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' }
+                    }}
+                  />
+                </Box>
               )}
             </Box>
           )}

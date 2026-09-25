@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
+import com.example.outletmanagement.annotation.Idempotent;
 /**
  * REST endpoints for POS sales and external billing integration.
  * <ul>
@@ -39,7 +40,7 @@ public class SaleController {
      * Can be called from the embedded POS UI or from an external billing system.
      */
     @PostMapping
-    @com.example.outletmanagement.annotation.Idempotent
+    @Idempotent
     @AuditAction(action = "PROCESS_SALE", entity = "SaleTransaction", captureBody = true)
     public ResponseEntity<ApiResponse<SaleResponse>> processSale(
             @Valid @RequestBody SaleRequest request,

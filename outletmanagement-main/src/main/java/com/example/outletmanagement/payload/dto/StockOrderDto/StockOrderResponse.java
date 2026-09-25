@@ -27,6 +27,8 @@ public class StockOrderResponse {
     private BigDecimal totalAmount;
     private Integer itemCount;
     private List<StockOrderItemResponse> items;
+    private String paymentMethod;
+    private String paymentStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

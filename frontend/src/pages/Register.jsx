@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../services/authService";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import {
   Box, TextField, Button, Typography, Paper,
   InputAdornment, IconButton, CircularProgress,
@@ -71,7 +71,7 @@ const FIELDS = [
 
 const Register = () => {
   const navigate = useNavigate();
-  const { login: authLogin } = useContext(AuthContext);
+  const { login: authLogin } = useAuth();
   const [form, setForm] = useState({ username: "", email: "", password: "", confirm: "" });
   const [errors, setErrors] = useState({});
   const [showPwd, setShowPwd] = useState({ password: false, confirm: false });

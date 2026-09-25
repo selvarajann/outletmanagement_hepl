@@ -22,6 +22,7 @@ export default function ConfirmDialog({ open, onClose, onConfirm, title, message
       maxWidth="xs"
       fullWidth
       PaperProps={{ sx: { borderRadius: 3, border: `1px solid ${C.border}` } }}
+      disableEnforceFocus
     >
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1, pt: 2.5, px: 3 }}>
         <Box display="flex" alignItems="center" gap={1.5}>

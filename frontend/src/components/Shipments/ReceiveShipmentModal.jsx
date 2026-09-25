@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Dialog, DialogContent, Box, Button, Typography, TextField,
-  Table, TableBody, TableCell, TableHead, TableRow, Chip,
+  Dialog, DialogContent, Box, Button, Typography, TextField, Chip,
   IconButton, CircularProgress, Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -11,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { ReceiveShipment, GetShipmentById } from "../../services/ShipmentService";
 import { C } from "../../theme/colors";
+import EnterpriseTable from "../shared/EnterpriseTable";
 
 const ReceiveShipmentModal = ({ open, onClose, shipmentId }) => {
   const queryClient = useQueryClient();
@@ -83,6 +83,45 @@ const ReceiveShipmentModal = ({ open, onClose, shipmentId }) => {
     };
     receiveMutation.mutate(payload);
   };
+
+  const columns = [
+    { label: "Product", render: (item) => (
+      <Box>
+        <Typography sx={{ fontWeight: 600, fontSize: 13, color: C.navy }}>{item.productName}</Typography>
+        <Typography sx={{ fontSize: 11, color: C.slateMid }}>{item.productCode}</Typography>
+      </Box>
+    ) },
+    { label: "Dispatched", align: "center", render: (item) => (
+      <Chip label={item.quantityDispatched} size="small" sx={{ fontWeight: 700, bgcolor: C.blueLight, color: C.blue }} />
+    ) },
+    { label: "Received Qty", align: "center", render: (item) => (
+      <TextField
+        type="number"
+        size="small"
+        value={item.quantityReceived}
+        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+        inputProps={{ min: 0, max: item.quantityDispatched }}
+        sx={{
+          width: 80,
+          "& input": { textAlign: "center", fontWeight: 700, py: 0.6, fontSize: 13 },
+          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+        }}
+      />
+    ) },
+    { label: "IMS Batch Code", render: (item) => (
+      <TextField
+        size="small"
+        value={item.imsBatchCode}
+        onChange={(e) => handleBatchCodeChange(item.id, e.target.value)}
+        placeholder="Batch code…"
+        sx={{
+          width: "100%",
+          "& input": { fontSize: 12, fontFamily: "monospace" },
+          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+        }}
+      />
+    ) }
+  ];
 
   return (
     <Dialog
@@ -157,74 +196,7 @@ const ReceiveShipmentModal = ({ open, onClose, shipmentId }) => {
                 <Typography sx={{ fontWeight: 700, fontSize: 13, color: C.navy, mb: 1.5 }}>
                   Shipment Items
                 </Typography>
-                <Table
-                  size="small"
-                  sx={{
-                    "& th": {
-                      fontWeight: 700, fontSize: 11, textTransform: "uppercase",
-                      letterSpacing: "0.5px", color: C.slateMid,
-                      bgcolor: C.bgMuted, py: 1.5, borderBottom: `1px solid ${C.border}`,
-                    },
-                    "& td": { py: 1.5, borderBottom: `1px solid ${C.borderMuted}` },
-                  }}
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Product</TableCell>
-                      <TableCell align="center">Dispatched</TableCell>
-                      <TableCell align="center">Received Qty</TableCell>
-                      <TableCell>IMS Batch Code</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>
-                          <Typography sx={{ fontWeight: 600, fontSize: 13, color: C.navy }}>
-                            {item.productName}
-                          </Typography>
-                          <Typography sx={{ fontSize: 11, color: C.slateMid }}>
-                            {item.productCode}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={item.quantityDispatched}
-                            size="small"
-                            sx={{ fontWeight: 700, bgcolor: C.blueLight, color: C.blue }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <TextField
-                            type="number"
-                            size="small"
-                            value={item.quantityReceived}
-                            onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                            inputProps={{ min: 0, max: item.quantityDispatched }}
-                            sx={{
-                              width: 80,
-                              "& input": { textAlign: "center", fontWeight: 700, py: 0.6, fontSize: 13 },
-                              "& .MuiOutlinedInput-root": { borderRadius: "8px" },
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            value={item.imsBatchCode}
-                            onChange={(e) => handleBatchCodeChange(item.id, e.target.value)}
-                            placeholder="Batch code…"
-                            sx={{
-                              width: "100%",
-                              "& input": { fontSize: 12, fontFamily: "monospace" },
-                              "& .MuiOutlinedInput-root": { borderRadius: "8px" },
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <EnterpriseTable columns={columns} data={items} emptyMessage="No items found." />
               </Box>
 
               {/* Notes */}

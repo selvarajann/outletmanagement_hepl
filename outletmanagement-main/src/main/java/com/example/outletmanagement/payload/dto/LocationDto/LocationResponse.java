@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LocationResponse {
-
     private Long id;
     private String name;
 }

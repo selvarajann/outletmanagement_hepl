@@ -1,11 +1,13 @@
 import { useRef, useState, memo } from "react";
-import { TableRow, TableCell, Typography, Chip, IconButton, Tooltip, Avatar, Box, CircularProgress } from "@mui/material";
+import { Box, Button, CircularProgress, Typography, Chip, Tooltip, IconButton, Avatar } from "@mui/material";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import { toast } from "react-toastify";
 import EnterpriseTable from "../shared/EnterpriseTable";
+import StatusChip from "../shared/StatusChip";
 import { C } from "../../theme/colors";
 import { enterpriseRowSx } from "../../theme/styles";
 
@@ -18,7 +20,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const fmt = (n) => `₹${Number(n).toLocaleString("en-IN")}`;
 
-export default function ProductTable({ products, onEdit, onDelete, onView, onImageUpload }) {
+export default function ProductTable({ products, onEdit, onDelete, onView, onImageUpload, onBulkDelete }) {
   const [uploadingId, setUploadingId] = useState(null);
   const inputRef = useRef(null);
   const [activeProduct, setActiveProduct] = useState(null);
@@ -88,7 +90,12 @@ export default function ProductTable({ products, onEdit, onDelete, onView, onIma
   return (
     <>
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: "none" }} onChange={handleFileChange} />
-      <EnterpriseTable columns={columns} data={products} emptyMessage="No products found" />
+      <EnterpriseTable
+        columns={columns}
+        data={products}
+        emptyMessage="No products found"
+        onBulkDelete={onBulkDelete}
+      />
     </>
   );
 }

@@ -12,12 +12,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
+import com.example.outletmanagement.annotation.Idempotent;
+import com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse;
 @RestController
 @RequestMapping("/api/stock-orders")
 @RequiredArgsConstructor
@@ -26,7 +30,7 @@ public class StockOrderController {
     private final StockOrderService stockOrderService;
 
     @PostMapping
-    @com.example.outletmanagement.annotation.Idempotent
+    @Idempotent
     @AuditAction(action = "CREATE_STOCK_ORDER", entity = "StockOrder", captureBody = true)
     public ResponseEntity<ApiResponse<StockOrderResponse>> createOrder(@Valid @RequestBody StockOrderRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -63,6 +67,13 @@ public class StockOrderController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Order updated", stockOrderService.updateOrder(id, request)));
     }
 
+    @PostMapping("/{id}/pay")
+    @AuditAction(action = "PAY_STOCK_ORDER", entity = "StockOrder")
+    public ResponseEntity<ApiResponse<StockOrderResponse>> payOrder(@PathVariable Long id) {
+        System.out.println("DEBUG: payOrder endpoint hit for id: " + id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Order paid successfully", stockOrderService.payOrder(id)));
+    }
+
     @PostMapping("/{id}/request-cancel")
     @AuditAction(action = "REQUEST_CANCEL_STOCK_ORDER", entity = "StockOrder")
     public ResponseEntity<ApiResponse<StockOrderResponse>> requestCancelOrder(@PathVariable Long id) {
@@ -77,14 +88,24 @@ public class StockOrderController {
     }
 
     @PostMapping("/{id}/retry-ims")
-    @com.example.outletmanagement.annotation.Idempotent
+    @Idempotent
     @AuditAction(action = "RETRY_IMS_PUSH", entity = "StockOrder")
     public ResponseEntity<ApiResponse<StockOrderResponse>> retryImsPush(@PathVariable Long id) {
         return ResponseEntity.ok(new ApiResponse<>(true, "IMS Push Retried", stockOrderService.retryImsPush(id)));
     }
 
+    @GetMapping("/{id}/bill")
+    public ResponseEntity<byte[]> downloadBill(@PathVariable Long id) {
+        byte[] billBytes = stockOrderService.generateBill(id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_HTML);
+        headers.setContentDispositionFormData("attachment", "invoice_" + id + ".html");
+        headers.setContentLength(billBytes.length);
+        return new ResponseEntity<>(billBytes, headers, HttpStatus.OK);
+    }
+
     @GetMapping("/warehouse-products")
-    public ResponseEntity<ApiResponse<com.example.outletmanagement.payload.dto.StockOrderDto.WarehouseProductsResponse>> getWarehouseProducts(
+    public ResponseEntity<ApiResponse<WarehouseProductsResponse>> getWarehouseProducts(
             @RequestParam Long outletId) {
         return ResponseEntity.ok(new ApiResponse<>(true, "Warehouse products fetched", 
                 stockOrderService.getWarehouseProducts(outletId)));

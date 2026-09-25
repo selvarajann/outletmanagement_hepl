@@ -16,6 +16,7 @@ import ImportExportBar from "../components/shared/ImportExportBar";
 import { C } from "../theme/colors";
 import usePaginatedFetch from "../hooks/usePaginatedFetch";
 import { useQueryClient } from "@tanstack/react-query";
+import StatusChip from "../components/shared/StatusChip";
 import { invalidateMaster } from "../hooks/useMasterData";
 
 const emptyForm = { name: "", productIds: [] };
@@ -96,6 +97,18 @@ export default function Division() {
     }
   };
 
+  const handleBulkDelete = async (ids) => {
+    
+    try {
+      await Promise.all(ids.map(id => DeleteDivision(id)));
+      toast.success(`${ids.length} divisions deleted!`);
+      refetch();
+      invalidateMaster(queryClient, "divisions");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to bulk delete divisions");
+    }
+  };
+
   const totalProducts = divisions.reduce((s, d) => s + (d.products?.length || 0), 0);
   const withProducts = divisions.filter((d) => d.products?.length > 0).length;
 
@@ -150,7 +163,7 @@ export default function Division() {
         ))}
       </Grid>
       {loading && <Box display="flex" justifyContent="center" py={4}><CircularProgress size={28} sx={{ color: C.blue }} /></Box>}
-      {!loading && <DivisionTable divisions={divisions} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} />}
+      {!loading && <DivisionTable divisions={divisions} onEdit={handleOpen} onDelete={handleDelete} onView={setViewItem} onBulkDelete={handleBulkDelete} />}
       <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <DivisionForm open={open} form={form} setForm={setForm} errors={errors} setErrors={setErrors} selectedId={selectedId} onClose={handleClose} onSubmit={handleSubmit} />
 

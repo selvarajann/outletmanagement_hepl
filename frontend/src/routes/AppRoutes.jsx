@@ -10,6 +10,8 @@ const Outlet = lazy(() => import("../pages/Outlet"));
 const Location = lazy(() => import("../pages/Location"));
 const Division = lazy(() => import("../pages/Division"));
 const Login = lazy(() => import("../pages/Login"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const StockOrder = lazy(() => import("../pages/StockOrder"));
 const Batch = lazy(() => import("../pages/Batch"));
 const Stock = lazy(() => import("../pages/Stock"));
@@ -25,6 +27,11 @@ const ReconciliationDashboard = lazy(() => import("../pages/ReconciliationDashbo
 const Shipments = lazy(() => import("../pages/Shipments"));
 const AuditLogs = lazy(() => import("../pages/AuditLogs"));
 const SystemJobs = lazy(() => import("../pages/SystemJobs"));
+const IMSOrders = lazy(() => import("../pages/IMSOrders"));
+const FormBuilder = lazy(() => import("../pages/FormBuilder"));
+const FormRenderer = lazy(() => import("../pages/FormRenderer"));
+const FormResponses = lazy(() => import("../pages/FormResponses"));
+const FormManagement = lazy(() => import("../pages/FormManagement"));
 
 import ProtectedRoute from "./ProtectedRoutes";
 
@@ -39,6 +46,8 @@ const AppRoutes = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route
           path="/"
@@ -50,13 +59,18 @@ const AppRoutes = () => {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           
-          {/* Everyone can access Dashboard */}
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="analytics" element={<AnalyticsDashboard />} />
-          
-          {/* Products and Stock accessible by all roles */}
-          <Route path="products" element={<Product />} />
-          <Route path="stock" element={<Stock />} />
+          {/* Everyone except INVENTORY_MANAGER can access Dashboard, Products, Stock */}
+          <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "OUTLET_MANAGER", "SALES_OPERATOR"]} />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="products" element={<Product />} />
+            <Route path="stock" element={<Stock />} />
+            <Route path="forms/:id" element={<FormRenderer />} />
+          </Route>
+
+          {/* Analytics accessible by all core roles */}
+          <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "OUTLET_MANAGER", "INVENTORY_MANAGER", "SALES_OPERATOR"]} />}>
+            <Route path="analytics" element={<AnalyticsDashboard />} />
+          </Route>
 
           {/* Super Admin Only */}
           <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />}>
@@ -66,7 +80,11 @@ const AppRoutes = () => {
             <Route path="admin/impersonation" element={<ImpersonationManagement />} />
             <Route path="system/dead-letters" element={<DeadLetterManager />} />
             <Route path="admin/audit-logs" element={<AuditLogs />} />
+            <Route path="admin/forms" element={<FormManagement />} />
             <Route path="system/jobs" element={<SystemJobs />} />
+            <Route path="form-builder" element={<FormBuilder />} />
+            <Route path="form-builder/:id" element={<FormBuilder />} />
+            <Route path="forms/:id/responses" element={<FormResponses />} />
           </Route>
 
           {/* Super Admin & Outlet Manager */}
@@ -74,8 +92,8 @@ const AppRoutes = () => {
             <Route path="outlets" element={<Outlet />} />
           </Route>
 
-          {/* Super Admin, Outlet Manager, Inventory Manager */}
-          <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "OUTLET_MANAGER", "INVENTORY_MANAGER"]} />}>
+          {/* Super Admin, Outlet Manager */}
+          <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "OUTLET_MANAGER"]} />}>
             <Route path="stock-orders" element={<StockOrder />} />
             <Route path="batches" element={<Batch />} />
             <Route path="shipments" element={<Shipments />} />
@@ -87,6 +105,7 @@ const AppRoutes = () => {
           {/* Inventory Manager Only */}
           <Route element={<ProtectedRoute allowedRoles={["INVENTORY_MANAGER"]} />}>
             <Route path="warehouse-products" element={<WarehouseProduct />} />
+            <Route path="ims-orders" element={<IMSOrders />} />
           </Route>
 
           {/* Sales Operator Only */}

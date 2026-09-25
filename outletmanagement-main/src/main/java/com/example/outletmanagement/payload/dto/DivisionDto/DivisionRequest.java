@@ -18,4 +18,5 @@ public class DivisionRequest {
     private String name;
 
     private List<Long> productIds;
+    private boolean active = true;
 }

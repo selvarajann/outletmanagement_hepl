@@ -11,7 +11,11 @@ import com.example.outletmanagement.annotation.AuditAction;
 import com.example.outletmanagement.payload.dto.AuthDto.AuthResponse;
 import com.example.outletmanagement.payload.dto.AuthDto.LoginRequest;
 import com.example.outletmanagement.payload.dto.AuthDto.RegisterRequest;
+import com.example.outletmanagement.payload.dto.AuthDto.ForgotPasswordRequest;
+import com.example.outletmanagement.payload.dto.AuthDto.ResetPasswordRequest;
+import com.example.outletmanagement.payload.dto.AuthDto.ChangePasswordRequest;
 import com.example.outletmanagement.payload.response.ApiResponse;
+import jakarta.validation.Valid;
 import com.example.outletmanagement.service.AuthService;
 
 import lombok.RequiredArgsConstructor;
@@ -138,5 +142,23 @@ public class AuthController {
                         "Invalid token",
                         false
                 ));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.processForgotPassword(request);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Password reset link sent to your email", null));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.processResetPassword(request);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Password has been reset successfully", null));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request, @RequestHeader("Authorization") String token) {
+        authService.changePassword(token, request);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Password has been changed successfully", null));
     }
 }

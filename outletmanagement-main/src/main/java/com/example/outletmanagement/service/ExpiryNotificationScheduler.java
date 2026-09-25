@@ -47,6 +47,9 @@ public class ExpiryNotificationScheduler {
     @Value("${app.admin.email:admin@outletmanagement.com}")
     private String adminEmail;
 
+    @Value("${app.backend.url:http://localhost:8080}")
+    private String backendUrl;
+
     @Value("${app.report.dir:uploads/reports}")
     private String reportDir;
 
@@ -103,7 +106,7 @@ public class ExpiryNotificationScheduler {
                 // Add button to Email HTML
                 String emailHtml;
                 if (!pdfUrl.isEmpty()) {
-                    String fullUrl = "http://localhost:8080" + pdfUrl;
+                    String fullUrl = backendUrl + pdfUrl;
                     emailHtml = emailTemplateService.baseLayout(subject, bodyContent + emailTemplateService.downloadButton(fullUrl));
                 } else {
                     emailHtml = pdfHtml;

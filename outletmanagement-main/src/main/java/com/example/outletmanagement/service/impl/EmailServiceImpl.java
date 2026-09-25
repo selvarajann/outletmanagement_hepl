@@ -124,6 +124,21 @@ public class EmailServiceImpl implements EmailService {
         send(toEmail, subject, html);
     }
 
+    @Override
+    public void sendPasswordResetEmail(String toEmail, String resetLink) {
+        String subject = "Password Reset Request";
+        String html = baseLayout(subject,
+            "<p>Hi,</p>" +
+            "<p>We received a request to reset the password for your Outlet Management account.</p>" +
+            "<div style='text-align:center;margin:30px 0;'>" +
+            "<a href='" + esc(resetLink) + "' style='background:#0f3460;color:#ffffff;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;'>Reset Password</a>" +
+            "</div>" +
+            alert("info",
+                "If you didn't request a password reset, you can safely ignore this email. This link will expire in 15 minutes.")
+        );
+        send(toEmail, subject, html);
+    }
+
     // ════════════════════════════════════════════════════════════════
     //  USER MANAGEMENT
     // ════════════════════════════════════════════════════════════════

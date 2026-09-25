@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { C } from "../theme/colors";
 import {
   Box,
@@ -16,14 +16,14 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import { TextField, InputAdornment, MenuItem } from "@mui/material";
 import impersonationService from "../services/impersonationService";
 import axiosInstance from "../config/axiosInstance";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 import EnterpriseTable from "../components/shared/EnterpriseTable";
 import TablePagination from "../components/shared/TablePagination";
 import PageHeader from "../components/shared/PageHeader";
 
 const ImpersonationManagement = () => {
-  const { startImpersonation } = useContext(AuthContext);
+  const { startImpersonation } = useAuth();
 
   const [users, setUsers] = useState([]);
   const [activeSessions, setActiveSessions] = useState([]);

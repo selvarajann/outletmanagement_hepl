@@ -10,6 +10,7 @@ public interface EmailService {
     void sendLoginNotification(String toEmail, String username);
     void sendNewUserRegisteredAlert(String adminEmail, String username, String userEmail, String role);
     void sendPasswordChangedEmail(String toEmail, String username);
+    void sendPasswordResetEmail(String toEmail, String resetLink);
     void sendUserCreatedEmail(String toEmail, String username, String role, String rawPassword);
     void sendUserUpdatedEmail(String toEmail, String username, String newRole, boolean isActive);
     void sendUserDeactivatedEmail(String toEmail, String username);

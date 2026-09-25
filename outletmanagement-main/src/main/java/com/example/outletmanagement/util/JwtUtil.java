@@ -16,8 +16,8 @@ import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
-
-    private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+    @Value("${jwt.secret}")
+    private String secret;
     private static final long JWT_TOKEN_VALIDITY = 1000 * 60 * 15; // 15 minutes
     private static final long REFRESH_TOKEN_VALIDITY = 1000 * 60 * 60 * 24 * 7; // 7 days
 
@@ -98,7 +98,7 @@ public class JwtUtil {
     }
 
     private SecretKey getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

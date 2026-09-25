@@ -1,12 +1,20 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Divider, IconButton, Table, TableHead, TableRow, TableCell, TableBody, Chip, CircularProgress } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Divider, IconButton, Chip, CircularProgress } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { C } from "../../theme/colors";
-
-const cellSx = { fontSize: 12, py: 1.2, px: 1.5, borderBottom: `1px solid ${C.border}` };
+import EnterpriseTable from "../shared/EnterpriseTable";
 
 export default function StockOrderItemsDialog({ open, onClose, order, loading }) {
   const items = order?.items || [];
   const total = items.reduce((sum, i) => sum + (parseFloat(i.lineTotal) || 0), 0);
+
+  const columns = [
+    { label: "#", render: (row, idx) => <Typography sx={{ fontSize: 12 }}>{idx + 1}</Typography> },
+    { label: "Product", render: (row) => <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{row.productName}</Typography> },
+    { label: "Code", render: (row) => <Chip label={row.productCode} size="small" sx={{ fontSize: 10, backgroundColor: C.blueLight, color: C.blue }} /> },
+    { label: "Qty Requested", render: (row) => <Typography sx={{ fontSize: 12 }}>{row.quantityRequested}</Typography> },
+    { label: "Unit Price", render: (row) => <Typography sx={{ fontSize: 12 }}>₹{parseFloat(row.unitPriceAtOrder || 0).toLocaleString()}</Typography> },
+    { label: "Line Total", render: (row) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: C.blue }}>₹{parseFloat(row.lineTotal || 0).toLocaleString()}</Typography> },
+  ];
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
@@ -34,31 +42,7 @@ export default function StockOrderItemsDialog({ open, onClose, order, loading })
           </Box>
         ) : (
           <>
-            <Table size="small" sx={{ border: `1px solid ${C.border}`, borderRadius: 2, overflow: "hidden" }}>
-              <TableHead sx={{ backgroundColor: C.navy }}>
-                <TableRow>
-                  {["#", "Product", "Code", "Qty Requested", "Unit Price", "Line Total"].map((h) => (
-                    <TableCell key={h} sx={{ ...cellSx, color: "#94a3b8", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.7, borderBottom: "none" }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((item, idx) => (
-                  <TableRow key={item.id ?? idx} sx={{ "&:hover": { backgroundColor: "#f8fafc" } }}>
-                    <TableCell sx={cellSx}>{idx + 1}</TableCell>
-                    <TableCell sx={cellSx}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{item.productName}</Typography>
-                    </TableCell>
-                    <TableCell sx={cellSx}>
-                      <Chip label={item.productCode} size="small" sx={{ fontSize: 10, backgroundColor: C.blueLight, color: C.blue }} />
-                    </TableCell>
-                    <TableCell sx={cellSx}>{item.quantityRequested}</TableCell>
-                    <TableCell sx={cellSx}>₹{parseFloat(item.unitPriceAtOrder || 0).toLocaleString()}</TableCell>
-                    <TableCell sx={{ ...cellSx, fontWeight: 700, color: C.blue }}>₹{parseFloat(item.lineTotal || 0).toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <EnterpriseTable columns={columns} data={items} emptyMessage="No items found" />
             <Box display="flex" justifyContent="flex-end" mt={2}>
               <Box sx={{ p: 1.5, backgroundColor: C.tealLight, borderRadius: 2, border: "1px solid #ccfbf1", minWidth: 200, textAlign: "right" }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: C.teal }}>ORDER TOTAL</Typography>

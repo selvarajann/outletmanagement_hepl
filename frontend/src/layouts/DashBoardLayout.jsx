@@ -7,11 +7,13 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useState, useMemo, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { useAppTheme } from "../context/ThemeContext";
+import { useAppTheme } from "../hooks/useAppTheme";
 import { C } from "../theme/colors";
 import NotificationBell from "../components/Notifications/NotificationBell";
 import ImpersonationBanner from "../components/shared/ImpersonationBanner";
 import ChatbotWidget from "../components/Chatbot/ChatbotWidget";
+import ChangePasswordDialog from "../components/common/ChangePasswordDialog";
+import { OutletLogoSVG } from "../pages/Login";
 
 import DashboardIcon          from "@mui/icons-material/Dashboard";
 import InventoryIcon          from "@mui/icons-material/Inventory";
@@ -28,9 +30,9 @@ import Inventory2Icon         from "@mui/icons-material/Inventory2";
 import WarehouseIcon          from "@mui/icons-material/Warehouse";
 import PersonIcon             from "@mui/icons-material/Person";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import StoreMallDirectoryIcon from "@mui/icons-material/StoreMallDirectory";
 import SupervisorAccountIcon  from "@mui/icons-material/SupervisorAccount";
 import KeyboardReturnIcon     from "@mui/icons-material/KeyboardReturn";
+import LockResetIcon          from "@mui/icons-material/LockReset";
 import LightModeIcon          from "@mui/icons-material/LightMode";
 import DarkModeIcon           from "@mui/icons-material/DarkMode";
 import ExpandLess             from "@mui/icons-material/ExpandLess";
@@ -54,11 +56,12 @@ const navSections = [
   {
     label: "Core",
     items: [
-      { name: "Dashboard",    path: "/dashboard",    icon: <DashboardIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER","SALES_OPERATOR"] },
+      { name: "Dashboard",    path: "/dashboard",    icon: <DashboardIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","SALES_OPERATOR"] },
       { name: "Analytics",    path: "/analytics",    icon: <DashboardIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER","SALES_OPERATOR"] },
       { name: "Point of Sale",path: "/pos",          icon: <ShoppingCartIcon />,roles: ["SALES_OPERATOR"] },
-      { name: "Products",     path: "/products",     icon: <InventoryIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER","SALES_OPERATOR"] },
+      { name: "Products",     path: "/products",     icon: <InventoryIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","SALES_OPERATOR"] },
       { name: "WH Products",  path: "/warehouse-products", icon: <WarehouseIcon />, roles: ["INVENTORY_MANAGER"] },
+      { name: "IMS Portal",   path: "/ims-orders",   icon: <Inventory2Icon />, roles: ["INVENTORY_MANAGER"] },
     ],
   },
   {
@@ -67,14 +70,14 @@ const navSections = [
       {
         name: "Stock Operations",
         icon: <WarehouseIcon />,
-        roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER","SALES_OPERATOR"],
+        roles: ["SUPER_ADMIN","OUTLET_MANAGER","SALES_OPERATOR"],
         children: [
-          { name: "Stock Ledger",   path: "/stock",        icon: <ListAltIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER","SALES_OPERATOR"] },
-          { name: "Stock Orders",   path: "/stock-orders", icon: <ShoppingCartIcon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER"] },
-          { name: "Shipments",      path: "/shipments",    icon: <StoreMallDirectoryIcon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER"] },
-          { name: "Batches",        path: "/batches",      icon: <Inventory2Icon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER"] },
-          { name: "Stock Returns",  path: "/stock-returns",icon: <KeyboardReturnIcon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER","INVENTORY_MANAGER"] },
-          { name: "Reconciliation", path: "/inventory/reconciliation", icon: <ListAltIcon />, roles: ["SUPER_ADMIN", "OUTLET_MANAGER", "INVENTORY_MANAGER"] },
+          { name: "Stock Ledger",   path: "/stock",        icon: <ListAltIcon />,  roles: ["SUPER_ADMIN","OUTLET_MANAGER","SALES_OPERATOR"] },
+          { name: "Stock Orders",   path: "/stock-orders", icon: <ShoppingCartIcon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER"] },
+          { name: "Shipments",      path: "/shipments",    icon: <StoreIcon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER"] },
+          { name: "Batches",        path: "/batches",      icon: <Inventory2Icon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER"] },
+          { name: "Stock Returns",  path: "/stock-returns",icon: <KeyboardReturnIcon />, roles: ["SUPER_ADMIN","OUTLET_MANAGER"] },
+          { name: "Reconciliation", path: "/inventory/reconciliation", icon: <ListAltIcon />, roles: ["SUPER_ADMIN", "OUTLET_MANAGER"] },
         ]
       },
       { name: "Outlets",      path: "/outlets",      icon: <StoreIcon />,      roles: ["SUPER_ADMIN","OUTLET_MANAGER"] },
@@ -100,8 +103,10 @@ const navSections = [
         roles: ["SUPER_ADMIN"],
         children: [
           { name: "Audit Logs",   path: "/admin/audit-logs", icon: <ListAltIcon />, roles: ["SUPER_ADMIN"] },
+          { name: "Form Management", path: "/admin/forms", icon: <ListAltIcon />, roles: ["SUPER_ADMIN", "ADMIN"] },
           { name: "Cron Scheduler", path: "/system/jobs", icon: <ListAltIcon />, roles: ["SUPER_ADMIN"] },
           { name: "Dead Letters", path: "/system/dead-letters", icon: <ListAltIcon />, roles: ["SUPER_ADMIN"] },
+          { name: "Form Builder", path: "/form-builder", icon: <ListAltIcon />, roles: ["SUPER_ADMIN"] },
         ]
       }
     ],
@@ -129,9 +134,9 @@ const roleLabel = {
 };
 const roleChipColor = {
   SUPER_ADMIN:       { bg: C.violetLight, color: C.violet },
-  OUTLET_MANAGER:    { bg: C.blueLight, color: C.blueDark },
-  INVENTORY_MANAGER: { bg: C.tealLight, color: C.teal },
-  SALES_OPERATOR:    { bg: C.amberLight, color: C.amber },
+  OUTLET_MANAGER:    { bg: C.blueLight,   color: C.blueDark },
+  INVENTORY_MANAGER: { bg: C.tealLight,   color: C.teal },
+  SALES_OPERATOR:    { bg: C.amberLight,  color: C.amber },
 };
 
 // ─── Sidebar content — shared between permanent and temporary drawers ─────────
@@ -204,7 +209,7 @@ const SidebarContent = ({ open, role, location, onNavClick, isDark, toggleTheme 
             sx={{
               minWidth: 0, mr: open ? 1.5 : 0,
               justifyContent: "center",
-              color: isActive ? "#6366f1" : iconColor,
+              color: isActive ? (isDark ? "#ffffff" : "#6366f1") : iconColor,
               transition: theme.transitions.create(["margin", "color"], {
                 duration: "0.2s",
               }),
@@ -256,13 +261,24 @@ const SidebarContent = ({ open, role, location, onNavClick, isDark, toggleTheme 
       >
         <Box
           sx={{
-            width: 34, height: 34, borderRadius: "10px", flexShrink: 0,
-            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-            boxShadow: "0 4px 14px rgba(99,102,241,0.40)",
+            width: 34, height: 34, flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
-          <StoreMallDirectoryIcon sx={{ fontSize: 18, color: "#fff" }} />
+          {/* Inline mini version of the SVG, now without background and using blue colors */}
+          <svg width="28" height="28" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="14" width="40" height="11" rx="2" fill="#4f46e5" />
+            <rect x="8"  y="14" width="7.5" height="11" fill="#4338ca" opacity="0.45" />
+            <rect x="24" y="14" width="7.5" height="11" fill="#4338ca" opacity="0.45" />
+            <rect x="40.5" y="14" width="7.5" height="11" fill="#4338ca" opacity="0.45" />
+            <path d="M8 25 Q11.5 31 15 25 Q18.5 31 22 25 Q25.5 31 29 25 Q32.5 31 36 25 Q39.5 31 43 25 Q46.5 31 48 25"
+              stroke="#4f46e5" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <rect x="12" y="25" width="32" height="17" rx="1.5" fill="transparent" stroke="#4f46e5" strokeWidth="1.4" />
+            <rect x="14" y="27" width="7" height="6" rx="1" fill="#e0e7ff" stroke="#4f46e5" strokeWidth="1" />
+            <rect x="35" y="27" width="7" height="6" rx="1" fill="#e0e7ff" stroke="#4f46e5" strokeWidth="1" />
+            <rect x="23" y="33" width="10" height="9" rx="1" fill="#e0e7ff" stroke="#4f46e5" strokeWidth="1.2" />
+            <circle cx="31.5" cy="37.5" r="1" fill="#4f46e5" />
+          </svg>
         </Box>
 
         <Box
@@ -349,7 +365,7 @@ const SidebarContent = ({ open, role, location, onNavClick, isDark, toggleTheme 
                               transition: theme.transitions.create(["padding", "background-color"], {
                                 duration: "0.2s",
                               }),
-                              color: hasActiveChild ? "#6366f1" : subtextColor,
+                              color: hasActiveChild ? (isDark ? "#ffffff" : "#6366f1") : subtextColor,
                               bgcolor: hasActiveChild && !open ? (isDark ? "rgba(255,255,255,0.08)" : "rgba(99,102,241,0.08)") : "transparent",
                               "&:hover": { bgcolor: hoverBg },
                             }}
@@ -358,7 +374,7 @@ const SidebarContent = ({ open, role, location, onNavClick, isDark, toggleTheme 
                               sx={{
                                 minWidth: 0, mr: open ? 1.5 : 0,
                                 justifyContent: "center",
-                                color: hasActiveChild ? "#6366f1" : iconColor,
+                                color: hasActiveChild ? (isDark ? "#ffffff" : "#6366f1") : iconColor,
                                 transition: theme.transitions.create(["margin", "color"], {
                                   duration: "0.2s",
                                 }),
@@ -390,7 +406,7 @@ const SidebarContent = ({ open, role, location, onNavClick, isDark, toggleTheme 
                         </Tooltip>
                         
                         {/* Expandable Children */}
-                        <Collapse in={isExpanded && open} timeout={300} unmountOnExit>
+                        <Collapse in={isExpanded && open} timeout={300}>
                           <List component="div" disablePadding>
                             {childVisible.map((child) => renderNavItem(child, true))}
                           </List>
@@ -450,6 +466,7 @@ const DashBoardLayout = () => {
   const { isDark, toggleTheme } = useAppTheme();
 
   const [anchorEl, setAnchorEl] = useState(null);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const menuOpen = Boolean(anchorEl);
   const { role, logout, isImpersonating } = useAuth();
   const BANNER_HEIGHT = isImpersonating ? 48 : 0;
@@ -587,6 +604,17 @@ const DashBoardLayout = () => {
               </Typography>
             </Box>
             <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                setChangePasswordOpen(true);
+              }}
+              sx={{ gap: 1.5, py: 1.25, fontSize: "13px", fontWeight: 600, color: C.navy,
+                "&:hover": { bgcolor: C.bgMuted }, transition: "background 0.15s" }}
+            >
+              <LockResetIcon sx={{ fontSize: 17 }} />
+              Change Password
+            </MenuItem>
+            <MenuItem
               onClick={handleLogout}
               sx={{ gap: 1.5, py: 1.25, fontSize: "13px", fontWeight: 600, color: C.rose,
                 "&:hover": { bgcolor: C.roseLight }, transition: "background 0.15s" }}
@@ -664,6 +692,7 @@ const DashBoardLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
+          minWidth: 0,
           px: { xs: 2, sm: 3 },
           pt: `${APPBAR_HEIGHT + 24 + BANNER_HEIGHT}px`,
           pb: 4,
@@ -679,6 +708,11 @@ const DashBoardLayout = () => {
 
       {/* Global AI Chatbot */}
       <ChatbotWidget />
+
+      <ChangePasswordDialog 
+        open={changePasswordOpen} 
+        onClose={() => setChangePasswordOpen(false)} 
+      />
     </Box>
   );
 };

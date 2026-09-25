@@ -15,6 +15,7 @@ public class WarehouseProductResponse {
     private String name;
     private String productCode;
     private Long divisionId;
+    private String divisionName;
     private BigDecimal uimPrice;
     private BigDecimal mrp;
     private BigDecimal sellingPrice;

@@ -1,28 +1,46 @@
 import axios from "axios";
 import { refreshToken } from "../services/authService";
+import { showLoader, hideLoader } from "../store/slices/uiSlice";
 
 const api = axios.create({
-  baseURL: "",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "",
   withCredentials: true, // send cookies (refreshToken HttpOnly) on every request
 });
+
+const setHeader = (headers, name, value) => {
+  if (!headers) return;
+  if (typeof headers.set === "function") {
+    headers.set(name, value);
+  } else {
+    headers[name] = value;
+  }
+};
+
+const setAuthHeader = (headers, token) => {
+  setHeader(headers, "Authorization", `Bearer ${token}`);
+};
 
 // ── Request interceptor: attach access token ────────────────────────────────
 api.interceptors.request.use(
   (config) => {
     const reqId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
     config.__requestId = reqId;
-    window.dispatchEvent(new CustomEvent('show-global-loader', { detail: { id: reqId } }));
+    if (api.store) api.store.dispatch(showLoader(reqId));
 
     try {
       const token = localStorage.getItem("token");
-      if (token) config.headers.Authorization = `Bearer ${token}`;
+      if (token) setAuthHeader(config.headers, token);
 
       // Add Idempotency-Key for modifying requests
-      if (['post', 'put', 'patch'].includes(config.method?.toLowerCase()) && !config.headers['Idempotency-Key']) {
-        config.headers['Idempotency-Key'] = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+      const method = config.method?.toLowerCase();
+      if (['post', 'put', 'patch'].includes(method)) {
+        const hasIdempotency = typeof config.headers.get === "function" ? config.headers.get("Idempotency-Key") : config.headers["Idempotency-Key"];
+        if (!hasIdempotency) {
+          setHeader(config.headers, 'Idempotency-Key', crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2));
+        }
       }
     } catch (err) {
-      window.dispatchEvent(new CustomEvent('hide-global-loader', { detail: { id: reqId } }));
+      if (api.store) api.store.dispatch(hideLoader(reqId));
       throw err;
     }
 
@@ -52,14 +70,14 @@ api.interceptors.response.use(
   (res) => {
     const reqId = res.config?.__requestId;
     if (reqId) {
-      window.dispatchEvent(new CustomEvent('hide-global-loader', { detail: { id: reqId } }));
+      if (api.store) api.store.dispatch(hideLoader(reqId));
     }
     return res;
   },
   async (error) => {
     const reqId = error.config?.__requestId;
     if (reqId) {
-      window.dispatchEvent(new CustomEvent('hide-global-loader', { detail: { id: reqId } }));
+      if (api.store) api.store.dispatch(hideLoader(reqId));
     }
 
     const originalRequest = error.config;
@@ -81,7 +99,7 @@ api.interceptors.response.use(
       })
         .then((token) => {
           if (originalRequest) {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+            setAuthHeader(originalRequest.headers, token);
             return api(originalRequest);
           }
           return Promise.reject(error);
@@ -114,7 +132,7 @@ api.interceptors.response.use(
       // Unblock queued requests
       processQueue(null, newToken);
       if (originalRequest) {
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        setAuthHeader(originalRequest.headers, newToken);
         return api(originalRequest);
       }
       return Promise.reject(error);
