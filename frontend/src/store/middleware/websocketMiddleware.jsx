@@ -14,8 +14,9 @@ export const websocketMiddleware = (store) => {
       const role = action.payload?.role || state.auth.role;
 
       if (!client && token && user) {
-        const wsUrl = import.meta.env.VITE_WS_URL || (window.location.hostname === "localhost" ? "http://localhost:8080/ws" : "/ws");
-        
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === "localhost" ? "http://localhost:8080" : "");
+        const wsUrl = import.meta.env.VITE_WS_URL || `${apiBaseUrl}/ws`;
+
         client = new Client({
           webSocketFactory: () => new SockJS(wsUrl),
           connectHeaders: { Authorization: `Bearer ${token}` },
