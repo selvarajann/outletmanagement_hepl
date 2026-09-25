@@ -117,6 +117,23 @@ const Login = () => {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setUsername("admin");
+    setPassword("password123");
+    setErrors({});
+    setLoading(true);
+    try {
+      const data = await login("admin", "password123");
+      authLogin(data.token, data.role);
+      toast.success("Welcome to the Demo!");
+      navigate("/dashboard");
+    } catch (err) {
+      toast.error(err.message || "Demo login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleKeyDown = (e) => { if (e.key === "Enter") handleLogin(); };
 
   return (
@@ -198,6 +215,13 @@ const Login = () => {
                              height: 44px; background: ${BLUE}; color: #fff; border: none; border-radius: 7px;
                              font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s;
                              font-family: inherit; margin-top: 4px; gap: 6px; }
+
+        .om-demo-btn       { display: flex; align-items: center; justify-content: center; width: 100%;
+                             height: 44px; background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; border-radius: 7px;
+                             font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+                             font-family: inherit; margin-top: 8px; gap: 6px; }
+        .om-demo-btn:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; border-color: #94a3b8; }
+
         .om-spinner        { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
                              border-top-color: #fff; border-radius: 50%; animation: om-spin 0.7s linear infinite; }
 
@@ -366,6 +390,16 @@ const Login = () => {
                 ) : (
                   <>Sign In <ArrowForward style={{ fontSize: 16 }} /></>
                 )}
+              </button>
+
+              {/* Demo Login */}
+              <button
+                type="button"
+                className="om-demo-btn"
+                onClick={handleDemoLogin}
+                disabled={loading}
+              >
+                <PersonIcon style={{ fontSize: 18 }} /> Quick Demo Login
               </button>
             </div>
 
