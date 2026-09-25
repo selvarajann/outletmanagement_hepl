@@ -36,7 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Duplicate headers cause browsers to reject Set-Cookie on cross-origin responses.
 
         if ("OPTIONS".equalsIgnoreCase(method)) {
-            response.setStatus(HttpServletResponse.SC_OK);
+            // Let the request proceed so Spring MVC's CorsFilter can add Access-Control headers
+            filterChain.doFilter(request, response);
             return;
         }
      
