@@ -39,16 +39,7 @@ export default defineConfig({
         },
     },
     build: {
-        sourcemap: false,
-        rollupOptions: {
-            output: {
-                manualChunks: {
-                    vendor: ['react', 'react-dom', 'react-router-dom'],
-                    mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled', '@mui/x-data-grid'],
-                    utils: ['axios', 'react-toastify', 'xlsx', '@tanstack/react-query']
-                }
-            }
-        }
+        sourcemap: false
     },
     optimizeDeps: {
         include: ['react', 'react-dom', 'react-router-dom', '@mui/material', '@mui/icons-material']
