@@ -47,6 +47,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String uri = request.getRequestURI();
+        if (uri != null && uri.startsWith("/ws")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // Wrap so downstream code (interceptors, @RequestBody) can read the body
         // Spring 6.x/Boot 4.x ContentCachingRequestWrapper requires an explicit buffer size
         final int BODY_BUFFER_SIZE = 10 * 1024; // 10 KB — sufficient for typical JSON payloads
@@ -66,10 +72,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         // Inbound log line
         String correlationId = (String) request.getAttribute(CorrelationIdFilter.ATTR_CORRELATION_ID);
         String queryString = request.getQueryString();
-        String uri = request.getRequestURI() + (queryString != null ? "?" + queryString : "");
+        String fullUri = request.getRequestURI() + (queryString != null ? "?" + queryString : "");
         String clientIp = getClientIp(request);
 
-        log.info("[{}] → {} {} from {}", correlationId, request.getMethod(), uri, clientIp);
+        log.info("[{}] → {} {} from {}", correlationId, request.getMethod(), fullUri, clientIp);
 
         try {
             filterChain.doFilter(wrappedRequest, wrappedResponse);
@@ -78,7 +84,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             // Add elapsed duration header before flushing
             response.setHeader("X-Response-Time", duration + "ms");
 
-            log.info("[{}] ← {} {} in {}ms", correlationId, wrappedResponse.getStatus(), uri, duration);
+            log.info("[{}] ← {} {} in {}ms", correlationId, wrappedResponse.getStatus(), fullUri, duration);
 
             // IMPORTANT: copy cached response body back to the real response stream
             wrappedResponse.copyBodyToResponse();
