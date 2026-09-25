@@ -15,8 +15,11 @@ import com.example.outletmanagement.repository.DivisionRepository;
 import java.math.BigDecimal;
 import com.example.outletmanagement.model.enums.ProductStatus;
 
+import org.springframework.context.annotation.Profile;
+
 @Component
 @RequiredArgsConstructor
+@Profile("!prod") // Do not run in production
 public class TestRunner implements CommandLineRunner {
 
     private final ChatbotIntentService chatbotIntentService;
